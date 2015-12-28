@@ -20,8 +20,7 @@ regress:
 # Set up machines: SRC PF RT ECO
 # SRC is the machine where this makefile is running.
 # PF is running OpenBSD forwarding through pf, it is the test target.
-# RTE is a router forwarding encrypted packets, maximum MTU is 1400.
-# RTP is a router forwarding plaintext packets, maximum MTU is 1300.
+# RT is a router forwarding packets, maximum MTU is 1300.
 # ECO is reflecting the ping and UDP and TCP echo packets.
 # RDR does not exist, PF redirects the traffic to ECO.
 # AF does not exist, PF translates address family and sends to ECO.
@@ -35,42 +34,60 @@ regress:
 # tunnel v4 in v6
 # tunnel v6 in v6
 #
-#               1400        1300
-# +---+   0   +---+   2   +---+  789  +---+
-# |SRC| ----> |IPS| ----> |RTP| ----> |ECO|
-# +---+       +---+       +---+       +---+
-#    out     in  out     in  out     in
+#               1400       1300
+# +---+   0   +---+   2   +--+  789  +---+
+# |SRC| ----> |IPS| ----> |RT| ----> |ECO|
+# +---+       +---+       +--+       +---+
+#    out     in  out     in out     in
 #
 
-SRC_OUT4 ?=
-SRC_OUT6 ?=
+SRC_OUT4 ?=	10.188.220.17
+SRC_OUT6 ?=	fdd7:e83e:66bc:220::17
 
-IPS_OUT4 ?=
-IPS_OUT6 ?=
+IPS_OUT4 ?=	10.188.222.70
+IPS_OUT6 ?=	fdd7:e83e:66bc:222::70
 
-ECO_IN40 ?=
-ECO_IN60 ?=
-ECO_IN44 ?=
-ECO_IN64 ?=
-ECO_IN46 ?=
-ECO_IN66 ?=
+RT_IN4 ?=	10.188.222.71
+RT_IN6 ?=	fdd7:e83e:66bc:222::71
+RT_OUT40 ?=	10.188.227.72
+RT_OUT60 ?=	fdd7:e83e:66bc:227::71
+RT_OUT44 ?=	10.188.228.71
+RT_OUT64 ?=	fdd7:e83e:66bc:228::71
+RT_OUT46 ?=	10.188.229.71
+RT_OUT66 ?=	fdd7:e83e:66bc:229::71
 
-#           1300        1400
-# +---+   1   +---+  345  +---+
-# |SRC| ----> |RTE| ----> |IPS|
-# +---+       +---+       +---+
-#     in     out  in     out
+ECO_IN40 ?=	10.188.227.72
+ECO_IN60 ?=	fdd7:e83e:66bc:227::72
+ECO_IN44 ?=	10.188.228.72
+ECO_IN64 ?=	fdd7:e83e:66bc:228::72
+ECO_IN46 ?=	10.188.229.72
+ECO_IN66 ?=	fdd7:e83e:66bc:229::72
+
+#           1300       1400
+# +---+   1   +--+  345  +---+
+# |SRC| ----> |RT| ----> |IPS|
+# +---+       +--+       +---+
+#     in     out in     out
 #
 
-SRC_IN4 ?=
-SRC_IN6 ?=
+SRC_IN4 ?=	10.188.221.17
+SRC_IN6 ?=	fdd7:e83e:66bc:221::17
 
-IPS_OUT40 ?=
-IPS_OUT60 ?=
-IPS_OUT44 ?=
-IPS_OUT64 ?=
-IPS_OUT46 ?=
-IPS_OUT66 ?=
+RT_OUT4 ?=	10.188.221.71
+RT_OUT6 ?=	fdd7:e83e:66bc:221::71
+RT_IN40 ?=	10.188.223.71
+RT_IN60 ?=	fdd7:e83e:66bc:223::71
+RT_IN44 ?=	10.188.224.71
+RT_IN64 ?=	fdd7:e83e:66bc:224::71
+RT_IN46 ?=	10.188.225.71
+RT_IN66 ?=	fdd7:e83e:66bc:225::71
+
+IPS_OUT40 ?=	10.188.223.70
+IPS_OUT60 ?=	fdd7:e83e:66bc:223::70
+IPS_OUT44 ?=	10.188.224.70
+IPS_OUT64 ?=	fdd7:e83e:66bc:224::70
+IPS_OUT46 ?=	10.188.225.70
+IPS_OUT66 ?=	fdd7:e83e:66bc:225::70
 
 # Configure Addresses on the machines, there must be routes for the
 # networks.  Adapt interface and addresse variables to your local
@@ -81,37 +98,13 @@ IPS_OUT66 ?=
 
 SRC_IFIN ?=	tap0
 SRC_IFOUT ?=	tap2
-PF_IFIN ?=	vio0
-PF_IFOUT ?=	vio1
-PF_SSH ?=	q70
+IPS_IFIN ?=	vio0
+IPS_IFOUT ?=	vio1
+RT_IF ?=	vio0
+ECO_IF ?=	vio0
+IPS_SSH ?=	q70
 RT_SSH ?=	q71
 ECO_SSH ?=	q72
-
-SRC_OUT ?=	10.188.210.10
-PF_IN ?=	10.188.210.50
-PF_OUT ?=	10.188.211.50
-RT_IN ?=	10.188.211.51
-RT_OUT ?=	10.188.212.51
-ECO_IN ?=	10.188.212.52
-ECO_OUT ?=	10.188.213.52
-RDR_IN ?=	10.188.214.188
-RDR_OUT ?=	10.188.215.188
-AF_IN ?=	10.188.216.82		# /24 must be dec(ECO_IN6/120)
-RTT_IN ?=	10.188.217.52
-RPT_OUT ?=	10.188.218.10
-
-SRC_OUT6 ?=	fdd7:e83e:66bc:210:fce1:baff:fed1:561f
-PF_IN6 ?=	fdd7:e83e:66bc:210:5054:ff:fe12:3450
-PF_OUT6 ?=	fdd7:e83e:66bc:211:5054:ff:fe12:3450
-RT_IN6 ?=	fdd7:e83e:66bc:211:5054:ff:fe12:3451
-RT_OUT6 ?=	fdd7:e83e:66bc:212:5054:ff:fe12:3451
-ECO_IN6 ?=	fdd7:e83e:66bc:212:5054:ff:fe12:3452
-ECO_OUT6 ?=	fdd7:e83e:66bc:213:5054:ff:fe12:3452
-RDR_IN6 ?=	fdd7:e83e:66bc:214::188
-RDR_OUT6 ?=	fdd7:e83e:66bc:215::188
-AF_IN6 ?=	fdd7:e83e:66bc:216::34	# /120 must be hex(ECO_IN/24)
-RTT_IN6 ?=	fdd7:e83e:66bc:217:5054:ff:fe12:3452
-RPT_OUT6 ?=	fdd7:e83e:66bc:1218:fce1:baff:fed1:561f
 
 .if empty (PF_SSH) || empty (RT_SSH) || empty (ECO_SSH)
 regress:
