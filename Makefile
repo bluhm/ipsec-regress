@@ -44,6 +44,8 @@ regress:
 SRC_OUT4 ?=	10.188.220.17
 SRC_OUT6 ?=	fdd7:e83e:66bc:220::17
 
+IPS_IN4 ?=	10.188.220.70
+IPS_IN6 ?=	fdd7:e83e:66bc:222::70
 IPS_OUT4 ?=	10.188.222.70
 IPS_OUT6 ?=	fdd7:e83e:66bc:222::70
 
@@ -131,14 +133,21 @@ depend: addr.py
 # Create python include file containing the addresses.
 addr.py: Makefile
 	rm -f $@ $@.tmp
-	echo 'SRC_IF="${SRC_IF}"' >>$@.tmp
-	echo 'SRC_MAC="${SRC_MAC}"' >>$@.tmp
-	echo 'PF_IFIN="${PF_IFIN}"' >>$@.tmp
-	echo 'PF_IFOUT="${PF_IFOUT}"' >>$@.tmp
-	echo 'PF_MAC="${PF_MAC}"' >>$@.tmp
-.for var in SRC_OUT PF_IN PF_OUT RT_IN RT_OUT ECO_IN ECO_OUT RDR_IN RDR_OUT AF_IN RTT_IN RPT_OUT
-	echo '${var}="${${var}}"' >>$@.tmp
-	echo '${var}6="${${var}6}"' >>$@.tmp
+	echo 'SRC_IFIN="${SRC_IFIN}"' >>$@.tmp
+	echo 'SRC_IFOUT="${SRC_IFOUT}"' >>$@.tmp
+	echo 'IPS_IFIN="${IPS_IFIN}"' >>$@.tmp
+	echo 'IPS_IFOUT="${IPS_IFOUT}"' >>$@.tmp
+	echo 'RT_IF="${RT_IF}"' >>$@.tmp
+	echo 'ECO_IF="${ECO_IF}"' >>$@.tmp
+.for ipv in 4 6
+.for var in SRC_IN SRC_OUT RT_IN RT_OUT IPS_IN IPS_OUT
+	echo '${var}${ipv}="${${var}${ipv}}"' >>$@.tmp
+.endfor
+.for tun in 0 4 6
+.for var in IPS_OUT RT_IN RT_OUT ECO_IN
+	echo '${var}${ipv}${tun}="${${var}${ipv}${tun}}"' >>$@.tmp
+.endfor
+.endfor
 .endfor
 	mv $@.tmp $@
 
