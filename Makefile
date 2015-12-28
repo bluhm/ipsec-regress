@@ -108,10 +108,10 @@ IPS_SSH ?=	q70
 RT_SSH ?=	q71
 ECO_SSH ?=	q72
 
-.if empty (PF_SSH) || empty (RT_SSH) || empty (ECO_SSH)
+.if empty (IPS_SSH) || empty (RT_SSH) || empty (ECO_SSH)
 regress:
 	@echo this tests needs three remote machines to operate on
-	@echo PF_SSH RT_SSH ECO_SSH are empty
+	@echo IPS_SSH RT_SSH ECO_SSH are empty
 	@echo fill out these variables for additional tests, then
 	@echo check wether your test machines are set up properly
 .endif
@@ -124,7 +124,7 @@ regress:
 	@echo
 	${SUDO} true
 	ssh -t ${PF_SSH} ${SUDO} true
-	rm -f stamp-pfctl
+	rm -f stamp-ipsec
 .endif
 .endif
 
@@ -151,13 +151,15 @@ addr.py: Makefile
 .endfor
 	mv $@.tmp $@
 
-# load the pf rules into the kernel of the PF machine
-# XXX pfctl does not replace variables after @
-stamp-pfctl: addr.py pf.conf
-	cat addr.py ${.CURDIR}/pf.conf | pfctl -n -f -
-	cat addr.py ${.CURDIR}/pf.conf | \
-	    sed 's/@$$PF_IFIN /@${PF_IFIN} /;s/@$$PF_IFOUT /@${PF_IFOUT} /' | \
-	    ssh ${PF_SSH} ${SUDO} pfctl -a regress -f -
+# load the ipsec sa and flow into the kernel of the SRC and PF machine
+stamp-ipsec: addr.py ipsec.conf
+	${SUDO} ipsecctl -F
+	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f -
+	cat addr.py ${.CURDIR}/ipsec.conf | \
+	    ${SUDO} ipsecctl -f -
+	cat addr.py ${.CURDIR}/ipsec.conf | \
+	    ssh ${IPS_SSH} ${SUDO} ipsecctl -f - \
+	    -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
 # Set variables so that make runs with and without obj directory.
