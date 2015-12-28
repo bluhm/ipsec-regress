@@ -20,40 +20,72 @@ regress:
 # Set up machines: SRC PF RT ECO
 # SRC is the machine where this makefile is running.
 # PF is running OpenBSD forwarding through pf, it is the test target.
-# RT is a router forwarding packets, maximum MTU is 1300.
+# RTE is a router forwarding encrypted packets, maximum MTU is 1400.
+# RTP is a router forwarding plaintext packets, maximum MTU is 1300.
 # ECO is reflecting the ping and UDP and TCP echo packets.
 # RDR does not exist, PF redirects the traffic to ECO.
 # AF does not exist, PF translates address family and sends to ECO.
 # RTT addresses exist on ECO, PF has no route and must use route-to RT
 # RPT addresses exist on SRC, PF has no route and must use reply-to SRC
 #
-# +---+   0   +--+   1   +--+   2   +---+ 3
-# |SRC| ----> |PF| ----> |RT| ----> |ECO| 7
-# +---+ 8     +--+       +--+       +---+ 9
-#     out    in  out    in  out    in   out
+# transport v4
+# transport v6
+# tunnel v4 in v4
+# tunnel v6 in v4
+# tunnel v4 in v6
+# tunnel v6 in v6
 #
-# 4 +---+ 5   6 +--+   7 +---+   +---+ 8
-#   |RDR|       |AF|     |RTT|   |RPT|
-#   +---+       +--+     +---+   +---+
-#  in   out    in       in           out
+#               1400        1300
+# +---+   0   +---+   2   +---+  789  +---+
+# |SRC| ----> |IPS| ----> |RTP| ----> |ECO|
+# +---+       +---+       +---+       +---+
+#    out     in  out     in  out     in
+#
+
+SRC_OUT4 ?=
+SRC_OUT6 ?=
+
+IPS_OUT4 ?=
+IPS_OUT6 ?=
+
+ECO_IN40 ?=
+ECO_IN60 ?=
+ECO_IN44 ?=
+ECO_IN64 ?=
+ECO_IN46 ?=
+ECO_IN66 ?=
+
+#           1300        1400
+# +---+   1   +---+  345  +---+
+# |SRC| ----> |RTE| ----> |IPS|
+# +---+       +---+       +---+
+#     in     out  in     out
+#
+
+SRC_IN4 ?=
+SRC_IN6 ?=
+
+IPS_OUT40 ?=
+IPS_OUT60 ?=
+IPS_OUT44 ?=
+IPS_OUT64 ?=
+IPS_OUT46 ?=
+IPS_OUT66 ?=
 
 # Configure Addresses on the machines, there must be routes for the
 # networks.  Adapt interface and addresse variables to your local
 # setup.  To control the remote machine you need a hostname for
 # ssh to log in.
-# You must have an anchor "regress" for the divert rules in the pf.conf
-# of the PF machine.  The kernel of the PF machine gets testet.
 #
 # Run make check-setup to see if you got the setup correct.
 
-SRC_IF ?=	tap0
-SRC_MAC ?=	fe:e1:ba:d1:0a:dc
+SRC_IFIN ?=	tap0
+SRC_IFOUT ?=	tap2
 PF_IFIN ?=	vio0
 PF_IFOUT ?=	vio1
-PF_MAC ?=	52:54:00:12:34:50
-PF_SSH ?=
-RT_SSH ?=
-ECO_SSH ?=
+PF_SSH ?=	q70
+RT_SSH ?=	q71
+ECO_SSH ?=	q72
 
 SRC_OUT ?=	10.188.210.10
 PF_IN ?=	10.188.210.50
