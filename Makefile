@@ -168,8 +168,9 @@ stamp-ipsec: addr.py ipsec.conf
 etc/hostname.${SRC_IFOUT}: Makefile
 	mkdir -p etc
 	rm -f $@ $@.tmp
-	echo 'inet ${SRC_OUT4}/24' >>$@.tmp
-	echo 'inet6 ${SRC_OUT6}/64' >>$@.tmp
+	echo '### regress $@' >$@.tmp
+	echo 'alias inet ${SRC_OUT4}/24' >>$@.tmp
+	echo 'alias inet6 ${SRC_OUT6}/64' >>$@.tmp
 .for tun in 0 4 6
 	echo '!route -inet ${ECO_IN4${tun}}/24 ${IPS_IN4}' >>$@.tmp
 	echo '!route -inet6 ${ECO_IN6${tun}}/64 ${IPS_IN6}' >>$@.tmp
@@ -179,15 +180,17 @@ etc/hostname.${SRC_IFOUT}: Makefile
 ${IPS_SSH}/hostname.${IPS_IFIN}: Makefile
 	mkdir -p ${IPS_SSH}
 	rm -f $@ $@.tmp
-	echo 'inet ${IPS_IN4}/24' >>$@.tmp
-	echo 'inet6 ${IPS_IN6}/64' >>$@.tmp
+	echo '### regress $@' >$@.tmp
+	echo 'alias inet ${IPS_IN4}/24' >>$@.tmp
+	echo 'alias inet6 ${IPS_IN6}/64' >>$@.tmp
 	mv $@.tmp $@
 
 ${IPS_SSH}/hostname.${IPS_IFOUT}: Makefile
 	mkdir -p etc
 	rm -f $@ $@.tmp
-	echo 'inet ${IPS_OUT4}/24' >>$@.tmp
-	echo 'inet6 ${IPS_OUT6}/64' >>$@.tmp
+	echo '### regress $@' >$@.tmp
+	echo 'alias inet ${IPS_OUT4}/24' >>$@.tmp
+	echo 'alias inet6 ${IPS_OUT6}/64' >>$@.tmp
 .for tun in 0 4 6
 	echo '!route -inet ${ECO_IN4${tun}}/24 ${RT_IN4}' >>$@.tmp
 	echo '!route -inet6 ${ECO_IN6${tun}}/64 ${RT_IN6}' >>$@.tmp
@@ -197,12 +200,13 @@ ${IPS_SSH}/hostname.${IPS_IFOUT}: Makefile
 ${RT_SSH}/hostname.${RT_IF}: Makefile
 	mkdir -p ${RT_SSH}
 	rm -f $@ $@.tmp
+	echo '### regress $@' >$@.tmp
 .for dir in IN OUT
-	echo 'inet ${RT_${dir}4}/24' >>$@.tmp
-	echo 'inet6 ${RT_${dir}6}/64' >>$@.tmp
+	echo 'alias inet ${RT_${dir}4}/24' >>$@.tmp
+	echo 'alias inet6 ${RT_${dir}6}/64' >>$@.tmp
 .for tun in 0 4 6
-	echo 'inet ${RT_${dir}4${tun}}/24' >>$@.tmp
-	echo 'inet6 ${RT_${dir}6${tun}}/64' >>$@.tmp
+	echo 'alias inet ${RT_${dir}4${tun}}/24' >>$@.tmp
+	echo 'alias inet6 ${RT_${dir}6${tun}}/64' >>$@.tmp
 .endfor
 .endfor
 	echo '!route -inet ${SRC_IN4${tun}}/24 ${IPS_IN4}' >>$@.tmp
@@ -212,9 +216,10 @@ ${RT_SSH}/hostname.${RT_IF}: Makefile
 ${ECO_SSH}/hostname.${ECO_IF}: Makefile
 	mkdir -p ${ECO_SSH}
 	rm -f $@ $@.tmp
+	echo '### regress $@' >$@.tmp
 .for tun in 0 4 6
-	echo 'inet ${ECO_IN4${tun}}/24' >>$@.tmp
-	echo 'inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
+	echo 'alias inet ${ECO_IN4${tun}}/24' >>$@.tmp
+	echo 'alias inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
 .endfor
 	echo '!route -inet ${SRC_OUT4}/24 ${RT_OUT40}' >>$@.tmp
 	echo '!route -inet6 ${SRC_OUT6}/64 ${RT_OUT60}' >>$@.tmp
@@ -223,8 +228,9 @@ ${ECO_SSH}/hostname.${ECO_IF}: Makefile
 etc/hostname.${SRC_IFIN}: Makefile
 	mkdir -p etc
 	rm -f $@ $@.tmp
-	echo 'inet ${SRC_IN4}/24' >>$@.tmp
-	echo 'inet6 ${SRC_IN6}/64' >>$@.tmp
+	echo '### regress $@' >$@.tmp
+	echo 'alias inet ${SRC_IN4}/24' >>$@.tmp
+	echo 'alias inet6 ${SRC_IN6}/64' >>$@.tmp
 .for tun in 0 4 6
 	echo '!route -inet ${IPS_OUT4${tun}}/24 ${RT_IN4}' >>$@.tmp
 	echo '!route -inet6 ${IPS_OUT6${tun}}/64 ${RT_IN6}' >>$@.tmp
@@ -237,6 +243,7 @@ stamp-hostname: etc/hostname.${SRC_IFOUT} \
     ${RT_SSH}/hostname.${RT_IF} \
     ${ECO_SSH}/hostname.${ECO_IF} \
     etc/hostname.${SRC_IFIN}
+	date >$@
 
 # Set variables so that make runs with and without obj directory.
 # Only do that if necessary to keep visible output short.
