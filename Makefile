@@ -54,7 +54,7 @@ IPS_OUT6 ?=	${PREFIX6}22::70
 
 RT_IN4 ?=	${PREFIX4}22.71
 RT_IN6 ?=	${PREFIX6}22::71
-RT_OUT40 ?=	${PREFIX4}27.72
+RT_OUT40 ?=	${PREFIX4}27.71
 RT_OUT60 ?=	${PREFIX6}27::71
 RT_OUT44 ?=	${PREFIX4}28.71
 RT_OUT64 ?=	${PREFIX6}28::71
@@ -187,6 +187,7 @@ ${IPS_SSH}/hostname.${IPS_IFIN}: Makefile
 	mkdir -p ${IPS_SSH}
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
+	echo '# IPS_IN' >>$@.tmp
 	echo 'inet alias ${IPS_IN4}/24' >>$@.tmp
 	echo 'inet6 alias ${IPS_IN6}/64' >>$@.tmp
 	mv $@.tmp $@
@@ -195,13 +196,16 @@ ${IPS_SSH}/hostname.${IPS_IFOUT}: Makefile
 	mkdir -p etc
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
+	echo '# IPS_OUT' >>$@.tmp
 	echo 'inet alias ${IPS_OUT4}/24' >>$@.tmp
 	echo 'inet6 alias ${IPS_OUT6}/64' >>$@.tmp
 .for tun in 0 4 6
+	echo '# IPS_OUT${tun}' >>$@.tmp
 	echo 'inet alias ${IPS_OUT4${tun}}/24' >>$@.tmp
 	echo 'inet6 alias ${IPS_OUT6${tun}}/64' >>$@.tmp
 .endfor
 .for tun in 0 4 6
+	echo '# ECO_IN${tun} RT_IN' >>$@.tmp
 	echo '!route -q delete -inet ${ECO_IN4${tun}}/24' >>$@.tmp
 	echo '!route add -inet ${ECO_IN4${tun}}/24 ${RT_IN4}' >>$@.tmp
 	echo '!route -q deete -inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
@@ -214,17 +218,20 @@ ${RT_SSH}/hostname.${RT_IF}: Makefile
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
 .for dir in IN OUT
+	echo '# RT_${dir}' >>$@.tmp
 	echo 'inet alias ${RT_${dir}4}/24' >>$@.tmp
 	echo 'inet6 alias ${RT_${dir}6}/64' >>$@.tmp
 .for tun in 0 4 6
+	echo '# RT_${dir}${tun}' >>$@.tmp
 	echo 'inet alias ${RT_${dir}4${tun}}/24' >>$@.tmp
 	echo 'inet6 alias ${RT_${dir}6${tun}}/64' >>$@.tmp
 .endfor
 .endfor
-	echo '!route -q delete -inet ${SRC_IN4${tun}}/24' >>$@.tmp
-	echo '!route add -inet ${SRC_IN4${tun}}/24 ${IPS_IN4}' >>$@.tmp
-	echo '!route -q delete -inet6 ${SRC_IN6${tun}}/64' >>$@.tmp
-	echo '!route add -inet6 ${SRC_IN6${tun}}/64 ${IPS_IN6}' >>$@.tmp
+	echo '# SRC_OUT${tun} IPS_OUT' >>$@.tmp
+	echo '!route -q delete -inet ${SRC_OUT4${tun}}/24' >>$@.tmp
+	echo '!route add -inet ${SRC_OUT4${tun}}/24 ${IPS_OUT4}' >>$@.tmp
+	echo '!route -q delete -inet6 ${SRC_OUT6${tun}}/64' >>$@.tmp
+	echo '!route add -inet6 ${SRC_OUT6${tun}}/64 ${IPS_OUT6}' >>$@.tmp
 	mv $@.tmp $@
 
 ${ECO_SSH}/hostname.${ECO_IF}: Makefile
@@ -232,9 +239,11 @@ ${ECO_SSH}/hostname.${ECO_IF}: Makefile
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
 .for tun in 0 4 6
+	echo '# ECO_IN${tun}' >>$@.tmp
 	echo 'inet alias ${ECO_IN4${tun}}/24' >>$@.tmp
 	echo 'inet6 alias ${ECO_IN6${tun}}/64' >>$@.tmp
 .endfor
+	echo '# SRC_OUT RT_OUT0' >>$@.tmp
 	echo '!route -q delete -inet ${SRC_OUT4}/24' >>$@.tmp
 	echo '!route add -inet ${SRC_OUT4}/24 ${RT_OUT40}' >>$@.tmp
 	echo '!route -q delete -inet6 ${SRC_OUT6}/64' >>$@.tmp
