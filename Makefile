@@ -249,23 +249,31 @@ PYTHON =	PYTHONPATH=${.OBJDIR} python2.7 ${.CURDIR}/
 # by PF and handled by ECO.
 TARGETS +=	ping  ping6
 
-run-regress-ping: stamp-pfctl
+run-regress-ping: stamp-ipsec
 	@echo '\n======== $@ ========'
-.for ip in SRC_OUT PF_IN PF_OUT RT_IN RT_OUT ECO_IN ECO_OUT RDR_IN RDR_OUT AF_IN RTT_IN
-	@echo Check ping ${ip}:
-	ping -n -c 1 ${${ip}}
+.for var in SRC_IN SRC_OUT RT_IN RT_OUT IPS_IN IPS_OUT
+	@echo Check ping ${var}4:
+	ping -n -c 1 ${${var}4}
 .endfor
-	@echo Check ping RPT_OUT:
-	ping -n -c 1 -I ${RPT_OUT} ${ECO_IN}
+.for var in IPS_OUT RT_IN RT_OUT ECO_IN
+.for tun in 0 4 6
+	@echo Check ping ${var}4${tun}:
+	ping -n -c 1 ${${var}4${tun}}
+.endfor
+.endfor
 
-run-regress-ping6: stamp-pfctl
+run-regress-ping6: stamp-ipsec
 	@echo '\n======== $@ ========'
-.for ip in SRC_OUT PF_IN PF_OUT RT_IN RT_OUT ECO_IN ECO_OUT RDR_IN RDR_OUT AF_IN RTT_IN
-	@echo Check ping ${ip}6:
-	ping6 -n -c 1 ${${ip}6}
+.for var in SRC_IN SRC_OUT RT_IN RT_OUT IPS_IN IPS_OUT
+	@echo Check ping ${var}6:
+	ping6 -n -c 1 ${${var}6}
 .endfor
-	@echo Check ping RPT_OUT6:
-	ping6 -n -c 1 -I ${RPT_OUT6} ${ECO_IN6}
+.for var in IPS_OUT RT_IN RT_OUT ECO_IN
+.for tun in 0 4 6
+	@echo Check ping ${var}6${tun}:
+	ping6 -n -c 1 ${${var}6${tun}}
+.endfor
+.endfor
 
 # Send a large IPv4/ICMP-Echo-Request packet with enabled DF bit and
 # parse response packet to determine MTU of the packet filter.  The
@@ -382,7 +390,8 @@ run-regress-tcp6: stamp-pfctl
 	${SUDO} route -n delete -host -inet6 ${RPT_OUT6} || true
 	openssl rand 200000 | nc -N -s ${RPT_OUT6} ${ECO_IN6} 7 | wc -c | grep '200000$$'
 
-REGRESS_TARGETS =	${TARGETS:S/^/run-regress-/}
+#REGRESS_TARGETS =	${TARGETS:S/^/run-regress-/}
+REGRESS_TARGETS =	${TARGETS:Mping:S/^/run-regress-/}
 
 CLEANFILES +=		addr.py *.pyc *.log stamp-* */hostname.*
 
