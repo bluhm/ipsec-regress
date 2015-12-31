@@ -105,7 +105,7 @@ SRC_IFIN ?=	tap0
 SRC_IFOUT ?=	tap2
 IPS_IFIN ?=	vio0
 IPS_IFOUT ?=	vio1
-RT_IF ?=	vio0
+RT_IF ?=	le0
 ECO_IF ?=	vio0
 IPS_SSH ?=	q70
 RT_SSH ?=	q71
@@ -126,7 +126,9 @@ regress:
 .BEGIN: pf.conf addr.py
 	@echo
 	${SUDO} true
-	ssh -t ${PF_SSH} ${SUDO} true
+	ssh root@${IPS_SSH} true
+	ssh root@${RT_SSH} true
+	ssh root@${ECO_SSH} true
 	rm -f stamp-ipsec
 .endif
 .endif
@@ -161,7 +163,7 @@ stamp-ipsec: addr.py ipsec.conf
 	cat addr.py ${.CURDIR}/ipsec.conf | \
 	    ${SUDO} ipsecctl -f -
 	cat addr.py ${.CURDIR}/ipsec.conf | \
-	    ssh ${IPS_SSH} ${SUDO} ipsecctl -f - \
+	    ssh root@${IPS_SSH} ipsecctl -f - \
 	    -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
@@ -264,6 +266,14 @@ stamp-hostname: etc/hostname.${SRC_IFOUT} \
 	${SUDO} mv /etc/hostname.${${if}}.tmp /etc/hostname.${${if}}
 	${SUDO} sh /etc/netstart ${${if}}
 .endfor
+.for host in RT ECO
+	ssh root@${${host}_SSH} "umask 027;\
+	    { sed '/^### regress/,\$$d' /etc/hostname.${${host}_IF} && cat; }\
+	    >/etc/hostname.${${host}_IF}.tmp"\
+	    <${${host}_SSH}/hostname.${${host}_IF}
+	ssh root@${${host}_SSH} "mv /etc/hostname.${${host}_IF}.tmp\
+	    /etc/hostname.${${host}_IF} && sh /etc/netstart ${${host}_IF}"
+.endfor
 	date >$@
 
 # Set variables so that make runs with and without obj directory.
@@ -280,7 +290,7 @@ PYTHON =	PYTHONPATH=${.OBJDIR} python2.7 ${.CURDIR}/
 # by PF and handled by ECO.
 TARGETS +=	ping  ping6
 
-run-regress-ping: stamp-ipsec
+run-regress-ping: stamp-ipsec stamp-hostname
 	@echo '\n======== $@ ========'
 .for var in SRC_IN SRC_OUT RT_IN RT_OUT IPS_IN IPS_OUT
 	@echo Check ping ${var}4:
