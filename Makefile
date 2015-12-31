@@ -198,6 +198,10 @@ ${IPS_SSH}/hostname.${IPS_IFOUT}: Makefile
 	echo 'inet alias ${IPS_OUT4}/24' >>$@.tmp
 	echo 'inet6 alias ${IPS_OUT6}/64' >>$@.tmp
 .for tun in 0 4 6
+	echo 'inet alias ${IPS_OUT4${tun}}/24' >>$@.tmp
+	echo 'inet6 alias ${IPS_OUT6${tun}}/64' >>$@.tmp
+.endfor
+.for tun in 0 4 6
 	echo '!route -q delete -inet ${ECO_IN4${tun}}/24' >>$@.tmp
 	echo '!route add -inet ${ECO_IN4${tun}}/24 ${RT_IN4}' >>$@.tmp
 	echo '!route -q deete -inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
@@ -266,13 +270,23 @@ stamp-hostname: etc/hostname.${SRC_IFOUT} \
 	${SUDO} mv /etc/hostname.${${if}}.tmp /etc/hostname.${${if}}
 	${SUDO} sh /etc/netstart ${${if}}
 .endfor
+.for if in IPS_IFOUT IPS_IFIN
+	ssh root@${IPS_SSH} "umask 027;\
+	    { sed '/^### regress/,\$$d' /etc/hostname.${${if}} && cat; }\
+	    >/etc/hostname.${${if}}.tmp"\
+	    <${IPS_SSH}/hostname.${${if}}
+	ssh root@${IPS_SSH}\
+	    "mv /etc/hostname.${${if}}.tmp /etc/hostname.${${if}} &&\
+	    sh /etc/netstart ${${if}}"
+.endfor
 .for host in RT ECO
 	ssh root@${${host}_SSH} "umask 027;\
 	    { sed '/^### regress/,\$$d' /etc/hostname.${${host}_IF} && cat; }\
 	    >/etc/hostname.${${host}_IF}.tmp"\
 	    <${${host}_SSH}/hostname.${${host}_IF}
-	ssh root@${${host}_SSH} "mv /etc/hostname.${${host}_IF}.tmp\
-	    /etc/hostname.${${host}_IF} && sh /etc/netstart ${${host}_IF}"
+	ssh root@${${host}_SSH}\
+	    "mv /etc/hostname.${${host}_IF}.tmp /etc/hostname.${${host}_IF} &&\
+	    sh /etc/netstart ${${host}_IF}"
 .endfor
 	date >$@
 
