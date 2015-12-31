@@ -169,11 +169,13 @@ etc/hostname.${SRC_IFOUT}: Makefile
 	mkdir -p etc
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
-	echo 'alias inet ${SRC_OUT4}/24' >>$@.tmp
-	echo 'alias inet6 ${SRC_OUT6}/64' >>$@.tmp
+	echo 'inet alias ${SRC_OUT4}/24' >>$@.tmp
+	echo 'inet6 alias ${SRC_OUT6}/64' >>$@.tmp
 .for tun in 0 4 6
-	echo '!route -inet ${ECO_IN4${tun}}/24 ${IPS_IN4}' >>$@.tmp
-	echo '!route -inet6 ${ECO_IN6${tun}}/64 ${IPS_IN6}' >>$@.tmp
+	echo '!route -q delete -inet ${ECO_IN4${tun}}/24' >>$@.tmp
+	echo '!route add -inet ${ECO_IN4${tun}}/24 ${IPS_IN4}' >>$@.tmp
+	echo '!route -q delete -inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
+	echo '!route add -inet6 ${ECO_IN6${tun}}/64 ${IPS_IN6}' >>$@.tmp
 .endfor
 	mv $@.tmp $@
 
@@ -181,19 +183,21 @@ ${IPS_SSH}/hostname.${IPS_IFIN}: Makefile
 	mkdir -p ${IPS_SSH}
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
-	echo 'alias inet ${IPS_IN4}/24' >>$@.tmp
-	echo 'alias inet6 ${IPS_IN6}/64' >>$@.tmp
+	echo 'inet alias ${IPS_IN4}/24' >>$@.tmp
+	echo 'inet6 alias ${IPS_IN6}/64' >>$@.tmp
 	mv $@.tmp $@
 
 ${IPS_SSH}/hostname.${IPS_IFOUT}: Makefile
 	mkdir -p etc
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
-	echo 'alias inet ${IPS_OUT4}/24' >>$@.tmp
-	echo 'alias inet6 ${IPS_OUT6}/64' >>$@.tmp
+	echo 'inet alias ${IPS_OUT4}/24' >>$@.tmp
+	echo 'inet6 alias ${IPS_OUT6}/64' >>$@.tmp
 .for tun in 0 4 6
-	echo '!route -inet ${ECO_IN4${tun}}/24 ${RT_IN4}' >>$@.tmp
-	echo '!route -inet6 ${ECO_IN6${tun}}/64 ${RT_IN6}' >>$@.tmp
+	echo '!route -q delete -inet ${ECO_IN4${tun}}/24' >>$@.tmp
+	echo '!route add -inet ${ECO_IN4${tun}}/24 ${RT_IN4}' >>$@.tmp
+	echo '!route -q deete -inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
+	echo '!route add -inet6 ${ECO_IN6${tun}}/64 ${RT_IN6}' >>$@.tmp
 .endfor
 	mv $@.tmp $@
 
@@ -202,15 +206,17 @@ ${RT_SSH}/hostname.${RT_IF}: Makefile
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
 .for dir in IN OUT
-	echo 'alias inet ${RT_${dir}4}/24' >>$@.tmp
-	echo 'alias inet6 ${RT_${dir}6}/64' >>$@.tmp
+	echo 'inet alias ${RT_${dir}4}/24' >>$@.tmp
+	echo 'inet6 alias ${RT_${dir}6}/64' >>$@.tmp
 .for tun in 0 4 6
-	echo 'alias inet ${RT_${dir}4${tun}}/24' >>$@.tmp
-	echo 'alias inet6 ${RT_${dir}6${tun}}/64' >>$@.tmp
+	echo 'inet alias ${RT_${dir}4${tun}}/24' >>$@.tmp
+	echo 'inet6 alias ${RT_${dir}6${tun}}/64' >>$@.tmp
 .endfor
 .endfor
-	echo '!route -inet ${SRC_IN4${tun}}/24 ${IPS_IN4}' >>$@.tmp
-	echo '!route -inet6 ${SRC_IN6${tun}}/64 ${IPS_IN6}' >>$@.tmp
+	echo '!route -q delete -inet ${SRC_IN4${tun}}/24' >>$@.tmp
+	echo '!route add -inet ${SRC_IN4${tun}}/24 ${IPS_IN4}' >>$@.tmp
+	echo '!route -q delete -inet6 ${SRC_IN6${tun}}/64' >>$@.tmp
+	echo '!route add -inet6 ${SRC_IN6${tun}}/64 ${IPS_IN6}' >>$@.tmp
 	mv $@.tmp $@
 
 ${ECO_SSH}/hostname.${ECO_IF}: Makefile
@@ -218,22 +224,26 @@ ${ECO_SSH}/hostname.${ECO_IF}: Makefile
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
 .for tun in 0 4 6
-	echo 'alias inet ${ECO_IN4${tun}}/24' >>$@.tmp
-	echo 'alias inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
+	echo 'inet alias ${ECO_IN4${tun}}/24' >>$@.tmp
+	echo 'inet6 alias ${ECO_IN6${tun}}/64' >>$@.tmp
 .endfor
-	echo '!route -inet ${SRC_OUT4}/24 ${RT_OUT40}' >>$@.tmp
-	echo '!route -inet6 ${SRC_OUT6}/64 ${RT_OUT60}' >>$@.tmp
+	echo '!route -q delete -inet ${SRC_OUT4}/24' >>$@.tmp
+	echo '!route add -inet ${SRC_OUT4}/24 ${RT_OUT40}' >>$@.tmp
+	echo '!route -q delete -inet6 ${SRC_OUT6}/64' >>$@.tmp
+	echo '!route add -inet6 ${SRC_OUT6}/64 ${RT_OUT60}' >>$@.tmp
 	mv $@.tmp $@
 
 etc/hostname.${SRC_IFIN}: Makefile
 	mkdir -p etc
 	rm -f $@ $@.tmp
 	echo '### regress $@' >$@.tmp
-	echo 'alias inet ${SRC_IN4}/24' >>$@.tmp
-	echo 'alias inet6 ${SRC_IN6}/64' >>$@.tmp
+	echo 'inet alias ${SRC_IN4}/24' >>$@.tmp
+	echo 'inet6 alias ${SRC_IN6}/64' >>$@.tmp
 .for tun in 0 4 6
-	echo '!route -inet ${IPS_OUT4${tun}}/24 ${RT_IN4}' >>$@.tmp
-	echo '!route -inet6 ${IPS_OUT6${tun}}/64 ${RT_IN6}' >>$@.tmp
+	echo '!route -q delete -inet ${IPS_OUT4${tun}}/24' >>$@.tmp
+	echo '!route add -inet ${IPS_OUT4${tun}}/24 ${RT_IN4}' >>$@.tmp
+	echo '!route -q delete -inet6 ${IPS_OUT6${tun}}/64' >>$@.tmp
+	echo '!route add -inet6 ${IPS_OUT6${tun}}/64 ${RT_IN6}' >>$@.tmp
 .endfor
 	mv $@.tmp $@
 
@@ -243,6 +253,13 @@ stamp-hostname: etc/hostname.${SRC_IFOUT} \
     ${RT_SSH}/hostname.${RT_IF} \
     ${ECO_SSH}/hostname.${ECO_IF} \
     etc/hostname.${SRC_IFIN}
+.for if in SRC_IFOUT SRC_IFIN
+	${SUDO} sh -c "umask 027;\
+	    { sed '/^### regress/,\$$d' /etc/hostname.${${if}} &&\
+	    cat etc/hostname.${${if}}; } >/etc/hostname.${${if}}.tmp"
+	${SUDO} mv /etc/hostname.${${if}}.tmp /etc/hostname.${${if}}
+	${SUDO} sh /etc/netstart ${${if}}
+.endfor
 	date >$@
 
 # Set variables so that make runs with and without obj directory.
