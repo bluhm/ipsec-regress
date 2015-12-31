@@ -292,7 +292,7 @@ TARGETS +=	ping  ping6
 
 run-regress-ping:
 	@echo '\n======== $@ ========'
-.for var in SRC_IN SRC_OUT RT_IN RT_OUT IPS_IN IPS_OUT
+.for var in SRC_IN SRC_OUT RT_OUT IPS_IN IPS_OUT
 	@echo Check ping ${var}4:
 	ping -n -c 1 ${${var}4}
 .endfor
@@ -305,7 +305,7 @@ run-regress-ping:
 
 run-regress-ping6: stamp-ipsec
 	@echo '\n======== $@ ========'
-.for var in SRC_IN SRC_OUT RT_IN RT_OUT IPS_IN IPS_OUT
+.for var in SRC_IN SRC_OUT RT_OUT IPS_IN IPS_OUT
 	@echo Check ping ${var}6:
 	ping6 -n -c 1 ${${var}6}
 .endfor
