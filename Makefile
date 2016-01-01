@@ -324,7 +324,7 @@ run-regress-ping:
 	@echo Check ping ${var}4:
 	ping -n -c 1 ${${var}4}
 .endfor
-.for var in IPS_OUT RT_IN RT_OUT ECO_IN
+.for var in IPS_OUT RT_OUT ECO_IN
 .for tun in 0 4 6
 	@echo Check ping ${var}4${tun}:
 	ping -n -c 1 ${${var}4${tun}}
@@ -333,11 +333,11 @@ run-regress-ping:
 
 run-regress-ping6: stamp-ipsec
 	@echo '\n======== $@ ========'
-.for var in SRC_IN SRC_OUT RT_OUT IPS_IN IPS_OUT
+.for var in SRC_IN SRC_OUT RT_OUT IPS_IN
 	@echo Check ping ${var}6:
 	ping6 -n -c 1 ${${var}6}
 .endfor
-.for var in IPS_OUT RT_IN RT_OUT ECO_IN
+.for var in IPS_OUT RT_OUT ECO_IN
 .for tun in 0 4 6
 	@echo Check ping ${var}6${tun}:
 	ping6 -n -c 1 ${${var}6${tun}}
