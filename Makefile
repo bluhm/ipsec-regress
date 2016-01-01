@@ -208,13 +208,13 @@ ${IPS_SSH}/hostname.${IPS_IFOUT}: Makefile
 	echo '# ECO_IN${tun} RT_IN' >>$@.tmp
 	echo '!route -q delete -inet ${ECO_IN4${tun}}/24' >>$@.tmp
 	echo '!route add -inet ${ECO_IN4${tun}}/24 ${RT_IN4}' >>$@.tmp
-	echo '!route -q deete -inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
+	echo '!route -q delete -inet6 ${ECO_IN6${tun}}/64' >>$@.tmp
 	echo '!route add -inet6 ${ECO_IN6${tun}}/64 ${RT_IN6}' >>$@.tmp
 .endfor
 	echo '# SRC_IN RT_IN0' >>$@.tmp
 	echo '!route -q delete -inet ${SRC_IN4}/24' >>$@.tmp
 	echo '!route add -inet ${SRC_IN4}/24 ${RT_IN40}' >>$@.tmp
-	echo '!route -q deete -inet6 ${SRC_IN60}/64' >>$@.tmp
+	echo '!route -q delete -inet6 ${SRC_IN60}/64' >>$@.tmp
 	echo '!route add -inet6 ${SRC_IN6}/64 ${RT_IN60}' >>$@.tmp
 	mv $@.tmp $@
 
