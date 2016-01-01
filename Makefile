@@ -101,8 +101,8 @@ IPS_OUT66 ?=	${PREFIX6}25::70
 #
 # Run make check-setup to see if you got the setup correct.
 
-SRC_IFIN ?=	tap0
-SRC_IFOUT ?=	tap2
+SRC_IFIN ?=	tap2
+SRC_IFOUT ?=	tap0
 IPS_IFIN ?=	vio0
 IPS_IFOUT ?=	vio1
 RT_IF ?=	le0
@@ -272,13 +272,6 @@ stamp-hostname: etc/hostname.${SRC_IFOUT} \
     ${RT_SSH}/hostname.${RT_IF} \
     ${ECO_SSH}/hostname.${ECO_IF} \
     etc/hostname.${SRC_IFIN}
-.for if in SRC_IFOUT SRC_IFIN
-	${SUDO} sh -c "umask 027;\
-	    { sed '/^### regress/,\$$d' /etc/hostname.${${if}} &&\
-	    cat etc/hostname.${${if}}; } >/etc/hostname.${${if}}.tmp"
-	${SUDO} mv /etc/hostname.${${if}}.tmp /etc/hostname.${${if}}
-	${SUDO} sh /etc/netstart ${${if}}
-.endfor
 .for if in IPS_IFOUT IPS_IFIN
 	ssh root@${IPS_SSH} "umask 027;\
 	    { sed '/^### regress/,\$$d' /etc/hostname.${${if}} && cat; }\
@@ -296,6 +289,13 @@ stamp-hostname: etc/hostname.${SRC_IFOUT} \
 	ssh root@${${host}_SSH}\
 	    "mv /etc/hostname.${${host}_IF}.tmp /etc/hostname.${${host}_IF} &&\
 	    sh /etc/netstart ${${host}_IF}"
+.endfor
+.for if in SRC_IFOUT SRC_IFIN
+	${SUDO} sh -c "umask 027;\
+	    { sed '/^### regress/,\$$d' /etc/hostname.${${if}} &&\
+	    cat etc/hostname.${${if}}; } >/etc/hostname.${${if}}.tmp"
+	${SUDO} mv /etc/hostname.${${if}}.tmp /etc/hostname.${${if}}
+	${SUDO} sh /etc/netstart ${${if}}
 .endfor
 	date >$@
 
@@ -315,7 +315,7 @@ TARGETS +=	ping  ping6
 
 run-regress-ping:
 	@echo '\n======== $@ ========'
-.for var in SRC_IN SRC_OUT RT_OUT IPS_IN IPS_OUT
+.for var in SRC_IN SRC_OUT RT_OUT IPS_IN
 	@echo Check ping ${var}4:
 	ping -n -c 1 ${${var}4}
 .endfor
