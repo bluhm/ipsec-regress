@@ -162,6 +162,7 @@ stamp-ipsec: addr.py ipsec.conf
 	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f -
 	cat addr.py ${.CURDIR}/ipsec.conf | \
 	    ${SUDO} ipsecctl -f -
+	ssh root@${IPS_SSH} ipsecctl -F
 	cat addr.py ${.CURDIR}/ipsec.conf | \
 	    ssh root@${IPS_SSH} ipsecctl -f - \
 	    -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
