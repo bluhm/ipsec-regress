@@ -28,24 +28,22 @@ regress:
 # RTT addresses exist on ECO, PF has no route and must use route-to RT
 # RPT addresses exist on SRC, PF has no route and must use reply-to SRC
 #
-# transport v4
-# transport v6
-# tunnel v4 in v4
-# tunnel v6 in v4
-# tunnel v4 in v6
-# tunnel v6 in v6
+# 0 transport v4
+# 0 transport v6
+# 1 tunnel v4 in v4 stack
+# 1 tunnel v6 in v4 stack
+# 2 tunnel v4 in v4 forward
+# 2 tunnel v6 in v4 forward
+# 3 tunnel v4 in v6 stack
+# 3 tunnel v6 in v6 stack
+# 4 tunnel v4 in v6 forward
+# 4 tunnel v6 in v6 forward
 #
 #               1400       1300
-# +---+   0   +---+   1   +---+   2   +---+
+# +---+   0   +---+ 3 1   +---+   2 4 +---+
 # |SRC| ----> |IPS| ----> |RT | ----> |ECO|
-# +---+       +---+       +---+    34 +---+
+# +---+       +---+       +---+       +---+
 #     isp   src   rt    isp   rcp    rt
-#
-#           1300       1400
-# +---+   5   +--+   1   +---+
-# |SRC| ----> |RT| ----> |IPS|
-# +---+       +--+   789 +---+
-#     rt    src  ips    rt
 #
 
 PREFIX_IPV4 ?=	10.188.1
