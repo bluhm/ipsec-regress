@@ -8,7 +8,7 @@
 
 # Check wether all required python packages are installed.  If some
 # are missing print a warning and skip the tests, but do not fail.
-PYTHON_IMPORT != python2.7 -c 'from scapy.all import *' 2>&1 || true
+PYTHON_IMPORT !!= python2.7 -c 'from scapy.all import *' 2>&1 || true
 .if ! empty(PYTHON_IMPORT)
 regress:
 	@echo '${PYTHON_IMPORT}'
@@ -321,171 +321,54 @@ PYTHON =	python2.7 ./
 PYTHON =	PYTHONPATH=${.OBJDIR} python2.7 ${.CURDIR}/
 .endif
 
-# Ping all addresses that can be reached by routing ut without
-# IPsec.  This ensures that the IP addresses are configured and
-# all routing table are set up to allow bidirectional packet flow.
-TARGETS +=	route
-
-run-regress-route:
-	@echo '\n======== $@ ========'
-.for var in SRC_OUT IPS_IN IPS_OUT RT_IN RT_OUT ECO_IN \
-    SRC_OUT RT_IN RT_OUT IPS_IN
-	@echo Check route with ping to '${var}_IPV4'
-	ping -n -c 1 ${${var}_IPv4}
-.endfor
-
 # Ping all addresses.  This ensures that the IP addresses are configured
 # and all routing table are set up to allow bidirectional packet flow.
-# Note that RDR does not exist physically.  So this traffic is rewritten
-# by PF and handled by ECO.
-TARGETS +=	ping  ping6
 
-run-regress-ping:
+.for host dir in SRC OUT SRC TRANSP \
+    IPS IN IPS OUT IPS TUNNEL4 IPS TUNNEL6 \
+    RT IN RT OUT \
+    ECO IN ECO TUNNEL4 ECO TUNNEL6
+.for ping ipv in ping IPV4 ping6 IPV6
+TARGETS +=      ping-${host}-${dir}-${ipv}
+run-regress-ping-${host}-${dir}-${ipv}:
 	@echo '\n======== $@ ========'
-.for var in SRC_OUT IPS_IN
-	@echo Check ping ${var}4:
-	ping -n -c 1 ${${var}4}
-.endfor
-.for var in RT_OUT ECO_IN
-.for tun in 4 6
-	@echo Check ping ${var}4${tun}:
-	ping -n -c 1 ${${var}4${tun}}
+	${ping} -n -c 1 ${${host}_${dir}_${ipv}}
 .endfor
 .endfor
 
-run-regress-ping6: stamp-ipsec
-	@echo '\n======== $@ ========'
-.for var in SRC_OUT IPS_IN
-	@echo Check ping ${var}6:
-	ping6 -n -c 1 ${${var}6}
-.endfor
-.for var in RT_OUT ECO_IN
-.for tun in 0 4 6
-	@echo Check ping ${var}6${tun}:
-	ping6 -n -c 1 ${${var}6${tun}}
-.endfor
-.endfor
+REGRESS_TARGETS =	${TARGETS:S/^/run-regress-/}
 
-# Send a large IPv4/ICMP-Echo-Request packet with enabled DF bit and
-# parse response packet to determine MTU of the packet filter.  The
-# outgoing MTU of PF has to be 1400 octets.  Packet size is 1500.
-# Check that the IP length of the original packet and the ICMP
-# quoted packet are the same.
-# XXX AF_IN is broken with PF MTU
-TARGETS +=	ping-mtu-1400 ping6-mtu-1400
-
-run-regress-ping-mtu-1400: addr.py stamp-pfctl
-	@echo '\n======== $@ ========'
-.for ip in ECO_IN ECO_OUT RDR_IN RDR_OUT RTT_IN
-	@echo Check path MTU to ${ip} is 1400
-	${SUDO} ${PYTHON}ping_mtu.py ${SRC_OUT} ${${ip}} 1500 1400
-.endfor
-	@echo Check path MTU from RPT_OUT is 1400
-	${SUDO} ${PYTHON}ping_mtu.py ${RPT_OUT} ${ECO_IN} 1500 1400
-
-run-regress-ping6-mtu-1400: addr.py stamp-pfctl
-	@echo '\n======== $@ ========'
-.for ip in ECO_IN ECO_OUT RDR_IN RDR_OUT RTT_IN
-	@echo Check path MTU to ${ip}6 is 1400
-	${SUDO} ${PYTHON}ping6_mtu.py ${SRC_OUT_IPV6} ${${ip}6} 1500 1400
-.endfor
-	@echo Check path MTU from RPT_OUT_IPV6 is 1400
-	${SUDO} ${PYTHON}ping6_mtu.py ${RPT_OUT_IPV6} ${ECO_IN_IPV6} 1500 1400
-
-# Send a large IPv4/ICMP-Echo-Request packet with enabled DF bit and
-# parse response packet to determine MTU of the router.  The MTU has
-# to be 1300 octets.  The MTU has to be defined at out interface of
-# the router RT before.  Packet size is 1400 to pass PF MTU.
-# Check that the IP length of the original packet and the ICMP
-# quoted packet are the same.
-TARGETS +=	ping-mtu-1300 ping6-mtu-1300
-
-run-regress-ping-mtu-1300: addr.py stamp-pfctl
-	@echo '\n======== $@ ========'
-.for ip in ECO_IN ECO_OUT RDR_IN RDR_OUT RTT_IN
-	@echo Check path MTU to ${ip} is 1300
-	${SUDO} ${PYTHON}ping_mtu.py ${SRC_OUT} ${${ip}} 1400 1300
-.endfor
-	@echo Check path MTU to AF_IN is 1280
-	${SUDO} ${PYTHON}ping_mtu.py ${SRC_OUT} ${AF_IN} 1380 1280
-	@echo Check path MTU from RPT_OUT is 1300
-	${SUDO} ${PYTHON}ping_mtu.py ${RPT_OUT} ${ECO_IN} 1400 1300
-
-run-regress-ping6-mtu-1300: addr.py stamp-pfctl
-	@echo '\n======== $@ ========'
-.for ip in ECO_IN ECO_OUT RDR_IN RDR_OUT RTT_IN
-	@echo Check path MTU to ${ip}6 is 1300
-	${SUDO} ${PYTHON}ping6_mtu.py ${SRC_OUT_IPV6} ${${ip}6} 1400 1300
-.endfor
-	@echo Check path MTU to AF_IN_IPV6 is 1320
-	${SUDO} ${PYTHON}ping6_mtu.py ${SRC_OUT_IPV6} ${AF_IN_IPV6} 1420 1320
-	@echo Check path MTU from RPT_OUT_IPV6 is 1300
-	${SUDO} ${PYTHON}ping6_mtu.py ${RPT_OUT_IPV6} ${ECO_IN_IPV6} 1400 1300
-
-# Send one UDP echo port 7 packet to all destination addresses with netcat.
-# The response must arrive in 1 second.
-TARGETS +=	udp  udp6
-
-run-regress-udp: stamp-pfctl
-	@echo '\n======== $@ ========'
-.for ip in ECO_IN ECO_OUT RDR_IN RDR_OUT AF_IN RTT_IN
-	@echo Check UDP ${ip}:
-	( echo $$$$ | nc -u ${${ip}} 7 & sleep 1; kill $$! ) | grep $$$$
-.endfor
-	@echo Check UDP RPT_OUT:
-	( echo $$$$ | nc -u -s ${RPT_OUT} ${ECO_IN} 7 & sleep 1; kill $$! ) | grep $$$$
-
-run-regress-udp6: stamp-pfctl
-	@echo '\n======== $@ ========'
-.for ip in ECO_IN ECO_OUT RDR_IN RDR_OUT AF_IN RTT_IN
-	@echo Check UDP ${ip}6:
-	( echo $$$$ | nc -u ${${ip}6} 7 & sleep 1; kill $$! ) | grep $$$$
-.endfor
-	@echo Check UDP RPT_OUT_IPV6:
-	( echo $$$$ | nc -u -s ${RPT_OUT_IPV6} ${ECO_IN_IPV6} 7 & sleep 1; kill $$! ) | grep $$$$
-
-# Send a data stream to TCP echo port 7 to all destination addresses
-# with netcat.  Use enough data to make sure PMTU discovery works.
-# Count the reflected bytes and compare with the transmitted ones.
-# Delete host route before test to trigger PMTU discovery.
-# XXX AF_IN is broken with PF MTU, make sure that it hits RT MTU 1300.
-TARGETS +=	tcp  tcp6
-
-run-regress-tcp: stamp-pfctl
-	@echo '\n======== $@ ========'
-.for ip in ECO_IN ECO_OUT RDR_IN RDR_OUT RTT_IN
-	@echo Check tcp ${ip}:
-	${SUDO} route -n delete -host -inet ${${ip}} || true
-	openssl rand 200000 | nc -N ${${ip}} 7 | wc -c | grep '200000$$'
-.endfor
-	@echo Check tcp AF_IN:
-	${SUDO} route -n delete -host -inet ${AF_IN} || true
-	${SUDO} ${PYTHON}ping_mtu.py ${SRC_OUT} ${AF_IN} 1380 1280 || true
-	openssl rand 200000 | nc -N ${AF_IN} 7 | wc -c | grep '200000$$'
-	@echo Check tcp RPT_OUT:
-	${SUDO} route -n delete -host -inet ${RPT_OUT} || true
-	openssl rand 200000 | nc -N -s ${RPT_OUT} ${ECO_IN} 7 | wc -c | grep '200000$$'
-
-run-regress-tcp6: stamp-pfctl
-	@echo '\n======== $@ ========'
-.for ip in ECO_IN ECO_OUT RDR_IN RDR_OUT RTT_IN
-	@echo Check tcp ${ip}6:
-	${SUDO} route -n delete -host -inet6 ${${ip}6} || true
-	openssl rand 200000 | nc -N ${${ip}6} 7 | wc -c | grep '200000$$'
-.endfor
-	@echo Check tcp AF_IN_IPV6:
-	${SUDO} route -n delete -host -inet6 ${AF_IN_IPV6} || true
-	${SUDO} ${PYTHON}ping6_mtu.py ${SRC_OUT_IPV6} ${AF_IN_IPV6} 1420 1320 || true
-	openssl rand 200000 | nc -N ${AF_IN_IPV6} 7 | wc -c | grep '200000$$'
-	@echo Check tcp RPT_OUT_IPV6:
-	${SUDO} route -n delete -host -inet6 ${RPT_OUT_IPV6} || true
-	openssl rand 200000 | nc -N -s ${RPT_OUT_IPV6} ${ECO_IN_IPV6} 7 | wc -c | grep '200000$$'
-
-#REGRESS_TARGETS =	${TARGETS:S/^/run-regress-/}
-REGRESS_TARGETS =	${TARGETS:Mroute:S/^/run-regress-/}
-
-${REGRESS_TARGETS}: stamp-ipsec stamp-hostname
+#${REGRESS_TARGETS}: stamp-ipsec stamp-hostname
 
 CLEANFILES +=		addr.py *.pyc *.log stamp-* */hostname.*
+
+.PHONY: check-setup
+
+# Check wether the address, route and remote setup is correct
+check-setup: check-setup-src
+
+check-setup-src:
+	@echo '\n======== $@ ========'
+.for host dir in SRC OUT SRC TRANSP
+.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+	${ping} -n -c 1 ${${host}_${dir}_${ipv}}  # ${host}_${dir}_${ipv}
+	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
+.endfor
+.endfor
+.for host dir in IPS OUT RT IN RT OUT ECO IN
+.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+	${ping} -n -c 1 ${${host}_${dir}_${ipv}}  # ${host}_${dir}_${ipv}
+	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    fgrep -q 'gateway: ${IPS_IN_${ipv}}' \
+	    # ${host}_${dir}_${ipv} IPS_IN_${ipv}
+.endfor
+.endfor
+.for host dir in IPS TUNNEL4 IPS TUNNEL6 ECO TUNNEL4 ECO TUNNEL6
+.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
+.endfor
+.endfor
 
 .include <bsd.regress.mk>
