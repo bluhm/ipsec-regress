@@ -140,7 +140,7 @@ addr.py: Makefile
 .endfor
 	mv $@.tmp $@
 
-# load the ipsec sa and flow into the kernel of the SRC and PF machine
+# load the ipsec sa and flow into the kernel of the SRC and IPS machine
 stamp-ipsec: addr.py ipsec.conf
 	${SUDO} ipsecctl -F
 	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f -
@@ -152,116 +152,143 @@ stamp-ipsec: addr.py ipsec.conf
 	    -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
+
 etc/hostname.${SRC_OUT_IF}: Makefile
-	mkdir -p etc
+	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
-	echo '### regress $@' >$@.tmp
-	echo '# SRC_OUT' >>$@.tmp
-	echo 'inet alias ${SRC_OUT_IPV4}/24' >>$@.tmp
-	echo 'inet6 alias ${SRC_OUT_IPV6}/64' >>$@.tmp
-.for tun in 4 6
-	echo '# ECO_IN${tun} IPS_IN' >>$@.tmp
-	echo '!route -q delete -inet ${ECO_IN_IPV4${tun}}/24' >>$@.tmp
-	echo '!route add -inet ${ECO_IN_IPV4${tun}}/24 ${IPS_IN_IPV4}' >>$@.tmp
-	echo '!route -q delete -inet6 ${ECO_IN_IPV6${tun}}/64' >>$@.tmp
-	echo '!route add -inet6 ${ECO_IN_IPV6${tun}}/64 ${IPS_IN_IPV6}' >>$@.tmp
+	echo '### ipsec regress $@' >$@.tmp
+.for dir in OUT TRANSP
+	echo '# SRC_${dir}' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${SRC_${dir}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.endfor
+.for host in RT ECO
+	echo '# ${host}_IN/pfxlen IPS_IN' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${${host}_IN_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${${host}_IN_${ipv}}/${pfxlen}'\
+	    ${IPS_IN_${ipv}} >>$@.tmp
+.endfor
+.endfor
+.for host in IPS ECP
+.for dir in TUNNEL4 TUNNEL6
+	echo '# ${host}_${dir}/pfxlen reject' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
+	    -reject ${SRC_OUT_${ipv}} >>$@.tmp
+.endfor
+.endfor
 .endfor
 	mv $@.tmp $@
 
-${IPS_SSH}/hostname.${IPS_IFIN}: Makefile
-	mkdir -p ${IPS_SSH}
+${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
+	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
-	echo '### regress $@' >$@.tmp
-	echo '# IPS_IN' >>$@.tmp
-	echo 'inet alias ${IPS_IN_IPV4}/24' >>$@.tmp
-	echo 'inet6 alias ${IPS_IN_IPV6}/64' >>$@.tmp
-	mv $@.tmp $@
-
-${IPS_SSH}/hostname.${IPS_IFOUT}: Makefile
-	mkdir -p etc
-	rm -f $@ $@.tmp
-	echo '### regress $@' >$@.tmp
-	echo '# IPS_OUT' >>$@.tmp
-	echo 'inet alias ${IPS_OUT_IPV4}/24' >>$@.tmp
-	echo 'inet6 alias ${IPS_OUT_IPV6}/64' >>$@.tmp
-.for tun in 0 4 6
-	echo '# IPS_OUT${tun}' >>$@.tmp
-	echo 'inet alias ${IPS_OUT_IPV4${tun}}/24' >>$@.tmp
-	echo 'inet6 alias ${IPS_OUT_IPV6${tun}}/64' >>$@.tmp
+	echo '### ipsec regress $@' >$@.tmp
+.for dir in IN TRANSP
+	echo '# IPS_${dir}' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${IPS_${dir}_${ipv}} ${masklen}' >>$@.tmp
 .endfor
-.for tun in 4 6
-	echo '# ECO_IN${tun} RT_IN' >>$@.tmp
-	echo '!route -q delete -inet ${ECO_IN_IPV4${tun}}/24' >>$@.tmp
-	echo '!route add -inet ${ECO_IN_IPV4${tun}}/24 ${RT_IN_IPV4}' >>$@.tmp
-	echo '!route -q delete -inet6 ${ECO_IN_IPV6${tun}}/64' >>$@.tmp
-	echo '!route add -inet6 ${ECO_IN_IPV6${tun}}/64 ${RT_IN_IPV6}' >>$@.tmp
-.endfor
-	echo '# SRC_IN RT_IN0' >>$@.tmp
-	echo '!route -q delete -inet ${SRC_IN_IPV4}/24' >>$@.tmp
-	echo '!route add -inet ${SRC_IN_IPV4}/24 ${RT_IN_IPV40}' >>$@.tmp
-	echo '!route -q delete -inet6 ${SRC_IN_IPV60}/64' >>$@.tmp
-	echo '!route add -inet6 ${SRC_IN_IPV6}/64 ${RT_IN_IPV60}' >>$@.tmp
-	mv $@.tmp $@
-
-${RT_SSH}/hostname.${RT_IF}: Makefile
-	mkdir -p ${RT_SSH}
-	rm -f $@ $@.tmp
-	echo '### regress $@' >$@.tmp
-.for dir in IN OUT
-	echo '# RT_${dir}' >>$@.tmp
-	echo 'inet alias ${RT_${dir}4}/24' >>$@.tmp
-	echo 'inet6 alias ${RT_${dir}6}/64' >>$@.tmp
-.for tun in 0 4 6
-	echo '# RT_${dir}${tun}' >>$@.tmp
-	echo 'inet alias ${RT_${dir}4${tun}}/24' >>$@.tmp
-	echo 'inet6 alias ${RT_${dir}6${tun}}/64' >>$@.tmp
-.endfor
-.endfor
-	echo '# SRC_OUT${tun} IPS_OUT' >>$@.tmp
-	echo '!route -q delete -inet ${SRC_OUT_IPV4${tun}}/24' >>$@.tmp
-	echo '!route add -inet ${SRC_OUT_IPV4${tun}}/24 ${IPS_OUT_IPV4}' >>$@.tmp
-	echo '!route -q delete -inet6 ${SRC_OUT_IPV6${tun}}/64' >>$@.tmp
-	echo '!route add -inet6 ${SRC_OUT_IPV6${tun}}/64 ${IPS_OUT_IPV6}' >>$@.tmp
-	mv $@.tmp $@
-
-${ECO_SSH}/hostname.${ECO_IF}: Makefile
-	mkdir -p ${ECO_SSH}
-	rm -f $@ $@.tmp
-	echo '### regress $@' >$@.tmp
-.for tun in 4 6
-	echo '# ECO_IN${tun}' >>$@.tmp
-	echo 'inet alias ${ECO_IN_IPV4${tun}}/24' >>$@.tmp
-	echo 'inet6 alias ${ECO_IN_IPV6${tun}}/64' >>$@.tmp
-.endfor
-	echo '# SRC_OUT RT_OUT0' >>$@.tmp
-	echo '!route -q delete -inet ${SRC_OUT_IPV4}/24' >>$@.tmp
-	echo '!route add -inet ${SRC_OUT_IPV4}/24 ${RT_OUT_IPV40}' >>$@.tmp
-	echo '!route -q delete -inet6 ${SRC_OUT_IPV6}/64' >>$@.tmp
-	echo '!route add -inet6 ${SRC_OUT_IPV6}/64 ${RT_OUT_IPV60}' >>$@.tmp
-	mv $@.tmp $@
-
-etc/hostname.${SRC_IFIN}: Makefile
-	mkdir -p etc
-	rm -f $@ $@.tmp
-	echo '### regress $@' >$@.tmp
-	echo '# SRC_IN' >>$@.tmp
-	echo 'inet alias ${SRC_IN_IPV4}/24' >>$@.tmp
-	echo 'inet6 alias ${SRC_IN_IPV6}/64' >>$@.tmp
-.for tun in 0 4 6
-	echo '# IPS_OUT${tun} RT_OUT' >>$@.tmp
-	echo '!route -q delete -inet ${IPS_OUT_IPV4${tun}}/24' >>$@.tmp
-	echo '!route add -inet ${IPS_OUT_IPV4${tun}}/24 ${RT_OUT_IPV4}' >>$@.tmp
-	echo '!route -q delete -inet6 ${IPS_OUT_IPV6${tun}}/64' >>$@.tmp
-	echo '!route add -inet6 ${IPS_OUT_IPV6${tun}}/64 ${RT_OUT_IPV6}' >>$@.tmp
 .endfor
 	mv $@.tmp $@
 
-stamp-hostname: etc/hostname.${SRC_IFOUT} \
-    ${IPS_SSH}/hostname.${IPS_IFIN} \
-    ${IPS_SSH}/hostname.${IPS_IFOUT} \
-    ${RT_SSH}/hostname.${RT_IF} \
-    ${ECO_SSH}/hostname.${ECO_IF} \
-    etc/hostname.${SRC_IFIN}
+${IPS_SSH}/hostname.${IPS_OUT_IF}: Makefile
+	mkdir -p ${@:H}
+	rm -f $@ $@.tmp
+	echo '### ipsec regress $@' >$@.tmp
+.for dir in OUT TUNNEL4 TUNNEL6
+	echo '# IPS_${dir}' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${IPS_${dir}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.endfor
+.for dir in IN TUNNEL4 TUNNEL6
+	echo '# ECO_${dir}/pfxlen RT_IN' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${ECO_${dir}_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${ECO_${dir}_${ipv}}/${pfxlen}'\
+	    ${RT_IN_${ipv}} >>$@.tmp
+.endfor
+.endfor
+	mv $@.tmp $@
+
+${RT_SSH}/hostname.${RT_IN_IF}: Makefile
+	mkdir -p ${@:H}
+	rm -f $@ $@.tmp
+	echo '### ipsec regress $@' >$@.tmp
+	echo '# RT_IN' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${RT_IN_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.for dir in OUT TRANSP
+	echo '# SRC_${dir}/pfxlen IPS_OUT' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${SRC_${dir}_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${SRC_${dir}_${ipv}}/${pfxlen}'\
+	    ${IPS_OUT_${ipv}} >>$@.tmp
+.endfor
+.endfor
+	mv $@.tmp $@
+
+${RT_SSH}/hostname.${RT_OUT_IF}: Makefile
+	mkdir -p ${@:H}
+	rm -f $@ $@.tmp
+	echo '### ipsec regress $@' >$@.tmp
+	echo '# RT_OUT' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${RT_OUT_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.for dir in TUNNEL4 TUNNEL6
+	echo '# ECO_${dir}/pfxlen ECO_IN' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${ECO_${dir}_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${ECO_${dir}_${ipv}}/${pfxlen}'\
+	    ${ECO_IN_${ipv}} >>$@.tmp
+.endfor
+.endfor
+	mv $@.tmp $@
+
+${ECO_SSH}/hostname.${ECO_IN_IF}: Makefile
+	mkdir -p ${@:H}
+	rm -f $@ $@.tmp
+	echo '### ipsec regress $@' >$@.tmp
+.for dir in IN TUNNEL4 TUNNEL6
+	echo '# ECO_${dir}' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${ECO_${dir}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.endfor
+	echo '# IPS_OUT/pfxlen RT_OUT' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${IPS_OUT_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${IPS_OUT_${ipv}}/${pfxlen}'\
+	    ${RT_OUT_${ipv}} >>$@.tmp
+.endfor
+.for dir in OUT TRANSP
+	echo '# SRC_${dir}/pfxlen RT_OUT' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${SRC_${dir}_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${SRC_${dir}_${ipv}}/${pfxlen}'\
+	    ${RT_OUT_${ipv}} >>$@.tmp
+.endfor
+.endfor
+	mv $@.tmp $@
+
+stamp-hostname: etc/hostname.${SRC_OUT_IF} \
+    ${IPS_SSH}/hostname.${IPS_IN_IF} ${IPS_SSH}/hostname.${IPS_OUT_IF} \
+    ${RT_SSH}/hostname.${RT_IN_IF} ${RT_SSH}/hostname.${RT_OUT_IF} \
+    ${ECO_SSH}/hostname.${ECO_IN_IF}
+	exit 1
 .for if in IPS_IFOUT IPS_IFIN
 	ssh root@${IPS_SSH} "umask 027;\
 	    { sed '/^### regress/,\$$d' /etc/hostname.${${if}} && cat; }\
