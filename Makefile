@@ -142,6 +142,7 @@ addr.py: Makefile
 
 # load the ipsec sa and flow into the kernel of the SRC and IPS machine
 stamp-ipsec: addr.py ipsec.conf
+	@echo '\n======== $@ ========'
 	${SUDO} ipsecctl -F
 	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f -
 	cat addr.py ${.CURDIR}/ipsec.conf | \
@@ -154,9 +155,10 @@ stamp-ipsec: addr.py ipsec.conf
 
 
 etc/hostname.${SRC_OUT_IF}: Makefile
+	@echo '\n======== $@ ========'
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
-	echo '### ipsec regress $@' >$@.tmp
+	echo '### regress ipsec $@' >$@.tmp
 .for dir in OUT TRANSP
 	echo '# SRC_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
@@ -172,7 +174,7 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 	    ${IPS_IN_${ipv}} >>$@.tmp
 .endfor
 .endfor
-.for host in IPS ECP
+.for host in IPS ECO
 .for dir in TUNNEL4 TUNNEL6
 	echo '# ${host}_${dir}/pfxlen reject' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
@@ -188,7 +190,7 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
-	echo '### ipsec regress $@' >$@.tmp
+	echo '### regress ipsec $@' >$@.tmp
 .for dir in IN TRANSP
 	echo '# IPS_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
@@ -198,9 +200,10 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	mv $@.tmp $@
 
 ${IPS_SSH}/hostname.${IPS_OUT_IF}: Makefile
+	@echo '\n======== $@ ========'
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
-	echo '### ipsec regress $@' >$@.tmp
+	echo '### regress ipsec $@' >$@.tmp
 .for dir in OUT TUNNEL4 TUNNEL6
 	echo '# IPS_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
@@ -219,9 +222,10 @@ ${IPS_SSH}/hostname.${IPS_OUT_IF}: Makefile
 	mv $@.tmp $@
 
 ${RT_SSH}/hostname.${RT_IN_IF}: Makefile
+	@echo '\n======== $@ ========'
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
-	echo '### ipsec regress $@' >$@.tmp
+	echo '### regress ipsec $@' >$@.tmp
 	echo '# RT_IN' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${RT_IN_${ipv}} ${masklen}' >>$@.tmp
@@ -238,9 +242,10 @@ ${RT_SSH}/hostname.${RT_IN_IF}: Makefile
 	mv $@.tmp $@
 
 ${RT_SSH}/hostname.${RT_OUT_IF}: Makefile
+	@echo '\n======== $@ ========'
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
-	echo '### ipsec regress $@' >$@.tmp
+	echo '### regress ipsec $@' >$@.tmp
 	echo '# RT_OUT' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${RT_OUT_${ipv}} ${masklen}' >>$@.tmp
@@ -257,9 +262,10 @@ ${RT_SSH}/hostname.${RT_OUT_IF}: Makefile
 	mv $@.tmp $@
 
 ${ECO_SSH}/hostname.${ECO_IN_IF}: Makefile
+	@echo '\n======== $@ ========'
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
-	echo '### ipsec regress $@' >$@.tmp
+	echo '### regress ipsec $@' >$@.tmp
 .for dir in IN TUNNEL4 TUNNEL6
 	echo '# ECO_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
@@ -288,31 +294,22 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
     ${IPS_SSH}/hostname.${IPS_IN_IF} ${IPS_SSH}/hostname.${IPS_OUT_IF} \
     ${RT_SSH}/hostname.${RT_IN_IF} ${RT_SSH}/hostname.${RT_OUT_IF} \
     ${ECO_SSH}/hostname.${ECO_IN_IF}
-	exit 1
-.for if in IPS_IFOUT IPS_IFIN
-	ssh root@${IPS_SSH} "umask 027;\
-	    { sed '/^### regress/,\$$d' /etc/hostname.${${if}} && cat; }\
-	    >/etc/hostname.${${if}}.tmp"\
-	    <${IPS_SSH}/hostname.${${if}}
-	ssh root@${IPS_SSH}\
-	    "mv /etc/hostname.${${if}}.tmp /etc/hostname.${${if}} &&\
-	    sh /etc/netstart ${${if}}"
-.endfor
-.for host in RT ECO
-	ssh root@${${host}_SSH} "umask 027;\
-	    { sed '/^### regress/,\$$d' /etc/hostname.${${host}_IF} && cat; }\
-	    >/etc/hostname.${${host}_IF}.tmp"\
-	    <${${host}_SSH}/hostname.${${host}_IF}
-	ssh root@${${host}_SSH}\
-	    "mv /etc/hostname.${${host}_IF}.tmp /etc/hostname.${${host}_IF} &&\
-	    sh /etc/netstart ${${host}_IF}"
-.endfor
-.for if in SRC_IFOUT SRC_IFIN
+	@echo '\n======== $@ ========'
 	${SUDO} sh -c "umask 027;\
-	    { sed '/^### regress/,\$$d' /etc/hostname.${${if}} &&\
-	    cat etc/hostname.${${if}}; } >/etc/hostname.${${if}}.tmp"
-	${SUDO} mv /etc/hostname.${${if}}.tmp /etc/hostname.${${if}}
-	${SUDO} sh /etc/netstart ${${if}}
+	    { sed '/^### regress/,\$$d' /etc/hostname.${SRC_OUT_IF} &&\
+	    cat; } >/etc/hostname.${SRC_OUT_IF}.tmp"\
+	    <etc/hostname.${SRC_OUT_IF}
+	${SUDO} sh -c "mv /etc/hostname.${SRC_OUT_IF}.tmp\
+	    /etc/hostname.${SRC_OUT_IF} &&\
+	    sh /etc/netstart ${SRC_OUT_IF}"
+.for host dir in IPS IN IPS OUT RT IN RT OUT ECO IN
+	ssh root@${${host}_SSH} "umask 027;\
+	    { sed '/^### regress/,\$$d' /etc/hostname.${${host}_${dir}_IF} &&\
+	    cat; } >/etc/hostname.${${host}_${dir}_IF}.tmp"\
+	    <${${host}_SSH}/hostname.${${host}_${dir}_IF}
+	ssh root@${${host}_SSH} "mv /etc/hostname.${${host}_${dir}_IF}.tmp\
+	    /etc/hostname.${${host}_${dir}_IF} &&\
+	    sh /etc/netstart ${${host}_${dir}_IF}"
 .endfor
 	date >$@
 
@@ -331,7 +328,7 @@ TARGETS +=	route
 
 run-regress-route:
 	@echo '\n======== $@ ========'
-.for var in SRC_OUT IPS_IN IPS_OUT RT_IN RT_OUT ECP_IN \
+.for var in SRC_OUT IPS_IN IPS_OUT RT_IN RT_OUT ECO_IN \
     SRC_OUT RT_IN RT_OUT IPS_IN
 	@echo Check route with ping to '${var}_IPV4'
 	ping -n -c 1 ${${var}_IPv4}
