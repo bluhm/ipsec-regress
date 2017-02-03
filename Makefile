@@ -28,21 +28,21 @@ regress:
 # RTT addresses exist on ECO, PF has no route and must use route-to RT
 # RPT addresses exist on SRC, PF has no route and must use reply-to SRC
 #
-# 0 transport v4
-# 0 transport v6
-# 1 tunnel v4 in v4 stack
-# 1 tunnel v6 in v4 stack
-# 2 tunnel v4 in v4 forward
-# 2 tunnel v6 in v4 forward
-# 3 tunnel v4 in v6 stack
-# 3 tunnel v6 in v6 stack
-# 4 tunnel v4 in v6 forward
-# 4 tunnel v6 in v6 forward
+# 3 transport v4
+# 3 transport v6
+# 4 tunnel v4 in v4 stack
+# 4 tunnel v6 in v4 stack
+# 5 tunnel v4 in v6 stack
+# 5 tunnel v6 in v6 stack
+# 6 tunnel v4 in v4 forward
+# 6 tunnel v6 in v4 forward
+# 7 tunnel v4 in v6 forward
+# 7 tunnel v6 in v6 forward
 #
 #               1400       1300
-# +---+   0   +---+ 3 1   +---+   2 4 +---+
+# +---+   0   +---+   1   +---+   2   +---+
 # |SRC| ----> |IPS| ----> |RT | ----> |ECO|
-# +---+       +---+       +---+       +---+
+# +---+   3   +---+ 45    +---+    67 +---+
 #     isp   src   rt    isp   rcp    rt
 #
 
@@ -51,23 +51,31 @@ PREFIX_IPV6 ?=	fdd7:e83e:66bc:10
 
 SRC_OUT_IPV4 ?=	${PREFIX_IPV4}0.17
 SRC_OUT_IPV6 ?=	${PREFIX_IPV6}0::17
+SRC_TRANSP_IPV4 ?=	${PREFIX_IPV4}3.17
+SRC_TRANSP_IPV6 ?=	${PREFIX_IPV6}3::17
 
 IPS_IN_IPV4 ?=	${PREFIX_IPV4}0.70
 IPS_IN_IPV6 ?=	${PREFIX_IPV6}0::70
-IPS_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}1.70
-IPS_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}1::70
-IPS_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}3.70
-IPS_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}3::70
+IPS_OUT_IPV4 ?=	${PREFIX_IPV4}1.70
+IPS_OUT_IPV6 ?=	${PREFIX_IPV6}1::70
+IPS_TRANSP_IPV4 ?=	${PREFIX_IPV4}3.70
+IPS_TRANSP_IPV6 ?=	${PREFIX_IPV6}3::70
+IPS_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}4.70
+IPS_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}4::70
+IPS_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}5.70
+IPS_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}5::70
 
 RT_IN_IPV4 ?=	${PREFIX_IPV4}1.71
 RT_IN_IPV6 ?=	${PREFIX_IPV6}1::71
 RT_OUT_IPV4 ?=	${PREFIX_IPV4}2.71
 RT_OUT_IPV6 ?=	${PREFIX_IPV6}2::71
 
-ECO_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}2.72
-ECO_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}2::72
-ECO_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}4.72
-ECO_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}4::72
+ECO_IN_IPV4 ?=	${PREFIX_IPV4}2.72
+ECO_IN_IPV6 ?=	${PREFIX_IPV6}2::72
+ECO_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}6.72
+ECO_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}6::72
+ECO_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}7.72
+ECO_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}7::72
 
 # Configure Addresses on the machines, there must be routes for the
 # networks.  Adapt interface and addresse variables to your local
@@ -111,24 +119,23 @@ depend: addr.py
 # Create python include file containing the addresses.
 addr.py: Makefile
 	rm -f $@ $@.tmp
-	echo 'SRC_IFIN="${SRC_IFIN}"' >>$@.tmp
-	echo 'SRC_IFOUT="${SRC_IFOUT}"' >>$@.tmp
-	echo 'IPS_IFIN="${IPS_IFIN}"' >>$@.tmp
-	echo 'IPS_IFOUT="${IPS_IFOUT}"' >>$@.tmp
-	echo 'RT_IF="${RT_IF}"' >>$@.tmp
-	echo 'ECO_IF="${ECO_IF}"' >>$@.tmp
-.for ipv in IPV4 IPV6
-.for host in SRC IPS RT
+.for host in SRC IPS RT ECO
 .for dir in IN OUT
+.for ipv in IF IPV4 IPV6
 	echo '${host}_${dir}_${ipv}="${${host}_${dir}_${ipv}}"' >>$@.tmp
 .endfor
 .endfor
-	echo 'ECO_IN_${ipv}="${ECO_IN_${ipv}}"' >>$@.tmp
-.for tun in TUN4 TUN6
-	echo 'ECO_IN_${tun}_${ipv}="${ECO_IN_${tun}_${ipv}}"' >>$@.tmp
 .endfor
-.for tun in TUN4 TUN6 TRANS
-	echo 'IPS_OUT_${tun}_${ipv}="${IPS_OUT_${tun}_${ipv}}"' >>$@.tmp
+.for host in IPS ECO
+.for tun in TUNNEL4 TUNNEL6
+.for ipv in IPV4 IPV6
+	echo '${host}_${tun}_${ipv}="${${host}_${tun}_${ipv}}"' >>$@.tmp
+.endfor
+.endfor
+.endfor
+.for host in SRC IPS
+.for ipv in IPV4 IPV6
+	echo '${host}_TRANSP_${ipv}="${${host}_TRANSP_${ipv}}"' >>$@.tmp
 .endfor
 .endfor
 	mv $@.tmp $@
