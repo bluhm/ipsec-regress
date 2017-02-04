@@ -388,4 +388,27 @@ check-setup-ips:
 #.endfor
 .endfor
 
+check-setup-rt:
+	@echo '\n======== $@ ========'
+.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+.for host dir in RT IN RT OUT
+	ssh ${RT_SSH} ${ping} -n -c 1 ${${host}_${dir}_${ipv}} \
+	    # ${host}_${dir}_${ipv}
+	ssh ${RT_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
+.endfor
+	ssh ${RT_SSH} ${ping} -n -c 1 ${IPS_OUT_${ipv}}  # IPS_OUT_${ipv}
+.for host dir in IPS IN SRC OUT # SRC TUNNEL4 SRC TUNNEL6
+	ssh ${RT_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    fgrep -q 'gateway: ${IPS_OUT_${ipv}}' \
+	    # ${host}_${dir}_${ipv} IPS_OUT_${ipv}
+.endfor
+	ssh ${RT_SSH} ${ping} -n -c 1 ${ECO_IN_${ipv}}  # ECO_IN_${ipv}
+.for host dir in ECO TUNNEL4 ECO TUNNEL6
+	ssh ${RT_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    fgrep -q 'gateway: ${ECO_IN_${ipv}}' \
+	    # ${host}_${dir}_${ipv} ECO_IN_${ipv}
+.endfor
+.endfor
+
 .include <bsd.regress.mk>
