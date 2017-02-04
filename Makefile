@@ -345,7 +345,7 @@ CLEANFILES +=		addr.py *.pyc *.log stamp-* */hostname.*
 .PHONY: check-setup
 
 # Check wether the address, route and remote setup is correct
-check-setup: check-setup-src check-setup-ips
+check-setup: check-setup-src check-setup-ips check-setup-rt check-setup-eco
 
 check-setup-src:
 	@echo '\n======== $@ ========'
@@ -408,6 +408,23 @@ check-setup-rt:
 	ssh ${RT_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    fgrep -q 'gateway: ${ECO_IN_${ipv}}' \
 	    # ${host}_${dir}_${ipv} ECO_IN_${ipv}
+.endfor
+.endfor
+
+check-setup-eco:
+	@echo '\n======== $@ ========'
+.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+.for host dir in ECO IN ECO TUNNEL4 ECO TUNNEL6
+	ssh ${ECO_SSH} ${ping} -n -c 1 ${${host}_${dir}_${ipv}} \
+	    # ${host}_${dir}_${ipv}
+	ssh ${ECO_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
+.endfor
+	ssh ${ECO_SSH} ${ping} -n -c 1 ${RT_OUT_${ipv}}  # RT_OUT_${ipv}
+.for host dir in RT IN IPS OUT IPS IN SRC OUT # SRC TUNNEL4 SRC TUNNEL6
+	ssh ${ECO_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    fgrep -q 'gateway: ${RT_OUT_${ipv}}' \
+	    # ${host}_${dir}_${ipv} RT_OUT_${ipv}
 .endfor
 .endfor
 
