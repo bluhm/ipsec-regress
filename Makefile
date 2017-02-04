@@ -321,7 +321,7 @@ PYTHON =	PYTHONPATH=${.OBJDIR} python2.7 ${.CURDIR}/
 # Ping all addresses.  This ensures that the IP addresses are configured
 # and all routing table are set up to allow bidirectional packet flow.
 
-.for host dir in SRC OUT SRC TRANSP \
+.for host dir in SRC OUT SRC TRANSP SRC TUNNEL \
     IPS IN IPS OUT IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     RT IN RT OUT \
     ECO IN ECO TUNNEL4 ECO TUNNEL6
