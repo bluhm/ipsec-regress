@@ -345,30 +345,47 @@ CLEANFILES +=		addr.py *.pyc *.log stamp-* */hostname.*
 .PHONY: check-setup
 
 # Check wether the address, route and remote setup is correct
-check-setup: check-setup-src
+check-setup: check-setup-src check-setup-ips
 
 check-setup-src:
 	@echo '\n======== $@ ========'
-.for host dir in SRC OUT SRC TRANSP
 .for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+.for host dir in SRC OUT SRC TRANSP
 	${ping} -n -c 1 ${${host}_${dir}_${ipv}}  # ${host}_${dir}_${ipv}
 	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
 .endfor
-.endfor
+	${ping} -n -c 1 ${IPS_IN_${ipv}}  # IPS_IN_${ipv}
 .for host dir in IPS OUT RT IN RT OUT ECO IN
-.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
-	${ping} -n -c 1 ${${host}_${dir}_${ipv}}  # ${host}_${dir}_${ipv}
 	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    fgrep -q 'gateway: ${IPS_IN_${ipv}}' \
 	    # ${host}_${dir}_${ipv} IPS_IN_${ipv}
 .endfor
-.endfor
 .for host dir in IPS TUNNEL4 IPS TUNNEL6 ECO TUNNEL4 ECO TUNNEL6
-.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
 	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
 .endfor
+.endfor
+
+check-setup-ips:
+	@echo '\n======== $@ ========'
+.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+.for host dir in IPS IN IPS OUT IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
+	ssh ${IPS_SSH} ${ping} -n -c 1 ${${host}_${dir}_${ipv}} \
+	    # ${host}_${dir}_${ipv}
+	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
+.endfor
+	ssh ${IPS_SSH} ${ping} -n -c 1 ${RT_IN_${ipv}}  # RT_IN_${ipv}
+.for host dir in RT OUT ECO IN ECO TUNNEL4 ECO TUNNEL6
+	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    fgrep -q 'gateway: ${RT_IN_${ipv}}' \
+	    # ${host}_${dir}_${ipv} RT_IN_${ipv}
+.endfor
+#.for host dir in SRC TUNNEL4 SRC TUNNEL6 SRC TUNNEL4 SRC TUNNEL6
+#	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+#	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
+#.endfor
 .endfor
 
 .include <bsd.regress.mk>
