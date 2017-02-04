@@ -28,16 +28,16 @@ regress:
 # RTT addresses exist on ECO, PF has no route and must use route-to RT
 # RPT addresses exist on SRC, PF has no route and must use reply-to SRC
 #
-# 3 transport v4
-# 3 transport v6
-# 4 tunnel v4 in v4 stack
-# 4 tunnel v6 in v4 stack
-# 5 tunnel v4 in v6 stack
-# 5 tunnel v6 in v6 stack
-# 6 tunnel v4 in v4 forward
-# 6 tunnel v6 in v4 forward
-# 7 tunnel v4 in v6 forward
-# 7 tunnel v6 in v6 forward
+# 4 transport v4
+# 4 transport v6
+# c tunnel v4 in v4 stack
+# c tunnel v6 in v4 stack
+# d tunnel v4 in v6 stack
+# d tunnel v6 in v6 stack
+# e tunnel v4 in v4 forward
+# e tunnel v6 in v4 forward
+# f tunnel v4 in v6 forward
+# f tunnel v6 in v6 forward
 #
 #               1400       1300
 # +---+   0   +---+   1   +---+   2   +---+
@@ -322,7 +322,7 @@ PYTHON =	PYTHONPATH=${.OBJDIR} python2.7 ${.CURDIR}/
 # and all routing table are set up to allow bidirectional packet flow.
 
 .for host dir in SRC OUT SRC TRANSP \
-    IPS IN IPS OUT IPS TUNNEL4 IPS TUNNEL6 \
+    IPS IN IPS OUT IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     RT IN RT OUT \
     ECO IN ECO TUNNEL4 ECO TUNNEL6
 .for ping ipv in ping IPV4 ping6 IPV6
