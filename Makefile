@@ -194,6 +194,15 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	echo '${inet} alias ${IPS_${dir}_${ipv}} ${masklen}' >>$@.tmp
 .endfor
 .endfor
+.for host dir in SRC TUNNEL
+	echo '# ${host}_${dir}/pfxlen reject ${IPS_IN_${ipv}}' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
+	    -reject ${IPS_IN_${ipv}} >>$@.tmp
+.endfor
+.endfor
 	mv $@.tmp $@
 
 ${IPS_SSH}/hostname.${IPS_OUT_IF}: Makefile
@@ -227,7 +236,7 @@ ${RT_SSH}/hostname.${RT_IN_IF}: Makefile
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${RT_IN_${ipv}} ${masklen}' >>$@.tmp
 .endfor
-.for dir in OUT TRANSP
+.for dir in OUT TUNNEL
 	echo '# SRC_${dir}/pfxlen IPS_OUT' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet} ${SRC_${dir}_${ipv}}/${pfxlen}'\
@@ -276,7 +285,7 @@ ${ECO_SSH}/hostname.${ECO_IN_IF}: Makefile
 	echo '!route add -${inet} ${IPS_OUT_${ipv}}/${pfxlen}'\
 	    ${RT_OUT_${ipv}} >>$@.tmp
 .endfor
-.for dir in OUT TRANSP
+.for dir in OUT TUNNEL
 	echo '# SRC_${dir}/pfxlen RT_OUT' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet} ${SRC_${dir}_${ipv}}/${pfxlen}'\
@@ -379,10 +388,10 @@ check-setup-ips:
 	    fgrep -q 'gateway: ${RT_IN_${ipv}}' \
 	    # ${host}_${dir}_${ipv} RT_IN_${ipv}
 .endfor
-#.for host dir in SRC TUNNEL4 SRC TUNNEL6 SRC TUNNEL4 SRC TUNNEL6
-#	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
-#	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
-#.endfor
+.for host dir in SRC TUNNEL
+	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
+	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
+.endfor
 .endfor
 
 check-setup-rt:
@@ -395,7 +404,7 @@ check-setup-rt:
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
 .endfor
 	ssh ${RT_SSH} ${ping} -n -c 1 ${IPS_OUT_${ipv}}  # IPS_OUT_${ipv}
-.for host dir in IPS IN SRC OUT # SRC TUNNEL4 SRC TUNNEL6
+.for host dir in IPS IN SRC OUT SRC TUNNEL
 	ssh ${RT_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    fgrep -q 'gateway: ${IPS_OUT_${ipv}}' \
 	    # ${host}_${dir}_${ipv} IPS_OUT_${ipv}
@@ -418,7 +427,7 @@ check-setup-eco:
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
 .endfor
 	ssh ${ECO_SSH} ${ping} -n -c 1 ${RT_OUT_${ipv}}  # RT_OUT_${ipv}
-.for host dir in RT IN IPS OUT IPS IN SRC OUT # SRC TUNNEL4 SRC TUNNEL6
+.for host dir in RT IN IPS OUT IPS IN SRC OUT SRC TUNNEL
 	ssh ${ECO_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    fgrep -q 'gateway: ${RT_OUT_${ipv}}' \
 	    # ${host}_${dir}_${ipv} RT_OUT_${ipv}
