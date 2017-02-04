@@ -42,40 +42,42 @@ regress:
 #               1400       1300
 # +---+   0   +---+   1   +---+   2   +---+
 # |SRC| ----> |IPS| ----> |RT | ----> |ECO|
-# +---+   3   +---+ 45    +---+    67 +---+
-#     isp   src   rt    isp   rcp    rt
+# +---+ 8 4   +---+ cd    +---+    ef +---+
+#     out    in   out    in   out    in
 #
 
-PREFIX_IPV4 ?=	10.188.10
-PREFIX_IPV6 ?=	fdd7:e83e:66bc:10
+PREFIX_IPV4 ?=	10.188.1
+PREFIX_IPV6 ?=	fdd7:e83e:66bc:1
 
-SRC_OUT_IPV4 ?=	${PREFIX_IPV4}0.17
+SRC_OUT_IPV4 ?=	${PREFIX_IPV4}00.17
 SRC_OUT_IPV6 ?=	${PREFIX_IPV6}0::17
-SRC_TRANSP_IPV4 ?=	${PREFIX_IPV4}3.17
-SRC_TRANSP_IPV6 ?=	${PREFIX_IPV6}3::17
+SRC_TRANSP_IPV4 ?=	${PREFIX_IPV4}04.17
+SRC_TRANSP_IPV6 ?=	${PREFIX_IPV6}4::17
+SRC_TUNNEL_IPV4 ?=	${PREFIX_IPV4}08.17
+SRC_TUNNEL_IPV6 ?=	${PREFIX_IPV6}8::17
 
-IPS_IN_IPV4 ?=	${PREFIX_IPV4}0.70
+IPS_IN_IPV4 ?=	${PREFIX_IPV4}00.70
 IPS_IN_IPV6 ?=	${PREFIX_IPV6}0::70
-IPS_OUT_IPV4 ?=	${PREFIX_IPV4}1.70
+IPS_OUT_IPV4 ?=	${PREFIX_IPV4}01.70
 IPS_OUT_IPV6 ?=	${PREFIX_IPV6}1::70
-IPS_TRANSP_IPV4 ?=	${PREFIX_IPV4}3.70
-IPS_TRANSP_IPV6 ?=	${PREFIX_IPV6}3::70
-IPS_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}4.70
-IPS_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}4::70
-IPS_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}5.70
-IPS_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}5::70
+IPS_TRANSP_IPV4 ?=	${PREFIX_IPV4}04.70
+IPS_TRANSP_IPV6 ?=	${PREFIX_IPV6}4::70
+IPS_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}12.70
+IPS_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}c::70
+IPS_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}13.70
+IPS_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}d::70
 
-RT_IN_IPV4 ?=	${PREFIX_IPV4}1.71
+RT_IN_IPV4 ?=	${PREFIX_IPV4}01.71
 RT_IN_IPV6 ?=	${PREFIX_IPV6}1::71
-RT_OUT_IPV4 ?=	${PREFIX_IPV4}2.71
+RT_OUT_IPV4 ?=	${PREFIX_IPV4}02.71
 RT_OUT_IPV6 ?=	${PREFIX_IPV6}2::71
 
-ECO_IN_IPV4 ?=	${PREFIX_IPV4}2.72
+ECO_IN_IPV4 ?=	${PREFIX_IPV4}02.72
 ECO_IN_IPV6 ?=	${PREFIX_IPV6}2::72
-ECO_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}6.72
-ECO_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}6::72
-ECO_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}7.72
-ECO_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}7::72
+ECO_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}14.72
+ECO_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}e::72
+ECO_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}15.72
+ECO_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}f::72
 
 # Configure Addresses on the machines, there must be routes for the
 # networks.  Adapt interface and addresse variables to your local
@@ -126,16 +128,11 @@ addr.py: Makefile
 .endfor
 .endfor
 .endfor
-.for host in IPS ECO
-.for tun in TUNNEL4 TUNNEL6
+.for host dir in SRC TRANSP SRC TUNNEL \
+    IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
+    ECO TUNNEL4 ECO TUNNEL6
 .for ipv in IPV4 IPV6
-	echo '${host}_${tun}_${ipv}="${${host}_${tun}_${ipv}}"' >>$@.tmp
-.endfor
-.endfor
-.endfor
-.for host in SRC IPS
-.for ipv in IPV4 IPV6
-	echo '${host}_TRANSP_${ipv}="${${host}_TRANSP_${ipv}}"' >>$@.tmp
+	echo '${host}_${dir}_${ipv}="${${host}_${dir}_${ipv}}"' >>$@.tmp
 .endfor
 .endfor
 	mv $@.tmp $@
@@ -159,7 +156,7 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
 	echo '### regress ipsec $@' >$@.tmp
-.for dir in OUT TRANSP
+.for dir in OUT TRANSP TUNNEL
 	echo '# SRC_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${SRC_${dir}_${ipv}} ${masklen}' >>$@.tmp
@@ -176,12 +173,12 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 .endfor
 .for host in IPS ECO
 .for dir in TUNNEL4 TUNNEL6
-	echo '# ${host}_${dir}/pfxlen reject' >>$@.tmp
+	echo '# ${host}_${dir}/pfxlen reject ${SRC_TUNNEL_${ipv}}' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
 	    >>$@.tmp
 	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
-	    -reject ${SRC_OUT_${ipv}} >>$@.tmp
+	    -reject ${SRC_TUNNEL_${ipv}} >>$@.tmp
 .endfor
 .endfor
 .endfor
@@ -329,16 +326,16 @@ PYTHON =	PYTHONPATH=${.OBJDIR} python2.7 ${.CURDIR}/
     RT IN RT OUT \
     ECO IN ECO TUNNEL4 ECO TUNNEL6
 .for ping ipv in ping IPV4 ping6 IPV6
-TARGETS +=      ping-${host}-${dir}-${ipv}
-run-regress-ping-${host}-${dir}-${ipv}:
+TARGETS +=      ping-${host}_${dir}_${ipv}
+run-regress-ping-${host}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
-	${ping} -n -c 1 ${${host}_${dir}_${ipv}}
+	${ping} -n -c 1 -w 2 ${${host}_${dir}_${ipv}}
 .endfor
 .endfor
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-/}
 
-#${REGRESS_TARGETS}: stamp-ipsec stamp-hostname
+${REGRESS_TARGETS}: stamp-ipsec stamp-hostname
 
 CLEANFILES +=		addr.py *.pyc *.log stamp-* */hostname.*
 
