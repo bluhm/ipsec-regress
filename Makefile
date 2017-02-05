@@ -28,21 +28,21 @@ regress:
 # RTT addresses exist on ECO, PF has no route and must use route-to RT
 # RPT addresses exist on SRC, PF has no route and must use reply-to SRC
 #
-# 4 transport v4
-# 4 transport v6
-# c tunnel v4 in v4 stack
-# c tunnel v6 in v4 stack
-# d tunnel v4 in v6 stack
-# d tunnel v6 in v6 stack
-# e tunnel v4 in v4 forward
-# e tunnel v6 in v4 forward
-# f tunnel v4 in v6 forward
-# f tunnel v6 in v6 forward
+# 45 transport v4
+# 45 transport v6
+# 8c tunnel v4 stack v4
+# 8c tunnel v4 stack v6
+# 8d tunnel v6 stack v4
+# 8d tunnel v6 stack v6
+# 8e tunnel v4 forward v4
+# 8e tunnel v4 forward v6
+# 8f tunnel v6 forward v4
+# 8f tunnel v6 forward v6
 #
 #               1400       1300
 # +---+   0   +---+   1   +---+   2   +---+
 # |SRC| ----> |IPS| ----> |RT | ----> |ECO|
-# +---+ 8 4   +---+ cd    +---+    ef +---+
+# +---+ 48  5 +---+ cd    +---+    ef +---+
 #     out    in   out    in   out    in
 #
 
@@ -60,8 +60,8 @@ IPS_IN_IPV4 ?=	${PREFIX_IPV4}00.70
 IPS_IN_IPV6 ?=	${PREFIX_IPV6}0::70
 IPS_OUT_IPV4 ?=	${PREFIX_IPV4}01.70
 IPS_OUT_IPV6 ?=	${PREFIX_IPV6}1::70
-IPS_TRANSP_IPV4 ?=	${PREFIX_IPV4}04.70
-IPS_TRANSP_IPV6 ?=	${PREFIX_IPV6}4::70
+IPS_TRANSP_IPV4 ?=	${PREFIX_IPV4}05.70
+IPS_TRANSP_IPV6 ?=	${PREFIX_IPV6}5::70
 IPS_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}12.70
 IPS_TUNNEL4_IPV6 ?=	${PREFIX_IPV6}c::70
 IPS_TUNNEL6_IPV4 ?=	${PREFIX_IPV4}13.70
@@ -162,12 +162,12 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 	echo '${inet} alias ${SRC_${dir}_${ipv}} ${masklen}' >>$@.tmp
 .endfor
 .endfor
-.for host in RT ECO
-	echo '# ${host}_IN/pfxlen IPS_IN' >>$@.tmp
+.for host dir in IPS TRANSP RT IN ECO IN
+	echo '# ${host}_${dir}/pfxlen IPS_IN' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
-	echo '!route -q delete -${inet} ${${host}_IN_${ipv}}/${pfxlen}'\
+	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
 	    >>$@.tmp
-	echo '!route add -${inet} ${${host}_IN_${ipv}}/${pfxlen}'\
+	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
 	    ${IPS_IN_${ipv}} >>$@.tmp
 .endfor
 .endfor
@@ -192,6 +192,15 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	echo '# IPS_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${IPS_${dir}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.endfor
+.for host dir in SRC TRANSP
+	echo '# ${host}_${dir}/pfxlen ${SRC_OUT_${ipv}}' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
+	    ${SRC_OUT_${ipv}} >>$@.tmp
 .endfor
 .endfor
 .for host dir in SRC TUNNEL
