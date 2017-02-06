@@ -148,11 +148,7 @@ stamp-ipsec: addr.py ipsec.conf
 TARGETS +=      ping-${host}_${dir}_${ipv}
 run-regress-ping-${host}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
-.if "${dir}" == TRANSP
-	${ping} -n -c 1 -w 2 -I ${SRC_TRANSP_${ipv}} ${${host}_${dir}_${ipv}}
-.else
 	${ping} -n -c 1 -w 2 ${${host}_${dir}_${ipv}}
-.endif
 .endfor
 .endfor
 
