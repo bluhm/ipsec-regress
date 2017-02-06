@@ -345,7 +345,7 @@ check-setup: check-setup-src check-setup-ips check-setup-rt check-setup-eco
 check-setup-src:
 	@echo '\n======== $@ ========'
 .for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
-.for host dir in SRC OUT SRC TRANSP
+.for host dir in SRC OUT SRC TRANSP SRC TUNNEL
 	${ping} -n -c 1 ${${host}_${dir}_${ipv}}  # ${host}_${dir}_${ipv}
 	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
@@ -361,6 +361,12 @@ check-setup-src:
 	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
 .endfor
 .endfor
+	route -n get -inet ${IPS_TRANSP_IPV4} |\
+	    fgrep -q 'gateway: ${IPS_IN_IPV4}' \
+	    # IPS_TRANSP_IPV4 IPS_IN_IPV4
+	route -n get -inet6 ${IPS_TRANSP_IPV6} |\
+	    fgrep -q 'gateway: ${IPS_IN_IPV6}' \
+	    # IPS_TRANSP_IPV6 IPS_IN_IPV6
 
 check-setup-ips:
 	@echo '\n======== $@ ========'
@@ -371,6 +377,7 @@ check-setup-ips:
 	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
 .endfor
+	ssh ${IPS_SSH} ${ping} -n -c 1 ${SRC_OUT_${ipv}}  # SRC_OUT_${ipv}
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${RT_IN_${ipv}}  # RT_IN_${ipv}
 .for host dir in RT OUT ECO IN ECO TUNNEL4 ECO TUNNEL6
 	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
@@ -382,6 +389,12 @@ check-setup-ips:
 	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
 .endfor
 .endfor
+	ssh ${IPS_SSH} route -n get -inet ${SRC_TRANSP_IPV4} |\
+	    fgrep -q 'gateway: ${SRC_OUT_IPV4}' \
+	    # SRC_TRANSP_IPV4 SRC_OUT_IPV4
+	ssh ${IPS_SSH} route -n get -inet6 ${SRC_TRANSP_IPV6} |\
+	    fgrep -q 'gateway: ${SRC_OUT_IPV6}' \
+	    # SRC_TRANSP_IPV6 SRC_OUT_IPV6
 
 check-setup-rt:
 	@echo '\n======== $@ ========'
