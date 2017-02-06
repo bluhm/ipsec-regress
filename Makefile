@@ -65,6 +65,7 @@ ECO_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}f::72
 # setup.  To control the remote machine you need a hostname for
 # ssh to log in.
 #
+# Run make create-setup to copy hostname.if files to the machines
 # Run make check-setup to see if you got the setup correct.
 
 SRC_OUT_IF ?=	tap4
@@ -129,6 +130,34 @@ stamp-ipsec: addr.py ipsec.conf
 	    -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
+# Ping all addresses.  This ensures that the IP addresses are configured
+# and all routing table are set up to allow bidirectional packet flow.
+
+.for host dir in SRC OUT SRC TRANSP SRC TUNNEL \
+    IPS IN IPS OUT IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
+    RT IN RT OUT \
+    ECO IN ECO TUNNEL4 ECO TUNNEL6
+.for ping ipv in ping IPV4 ping6 IPV6
+TARGETS +=      ping-${host}_${dir}_${ipv}
+run-regress-ping-${host}_${dir}_${ipv}:
+	@echo '\n======== $@ ========'
+.if "${dir}" == TRANSP
+	${ping} -n -c 1 -w 2 -I ${SRC_TRANSP_${ipv}} ${${host}_${dir}_${ipv}}
+.else
+	${ping} -n -c 1 -w 2 ${${host}_${dir}_${ipv}}
+.endif
+.endfor
+.endfor
+
+REGRESS_TARGETS =	${TARGETS:S/^/run-regress-/}
+
+${REGRESS_TARGETS}: stamp-ipsec
+
+CLEANFILES +=		addr.py *.pyc *.log stamp-* */hostname.*
+
+.PHONY: create-setup
+
+create-setup: stamp-hostname
 
 etc/hostname.${SRC_OUT_IF}: Makefile
 	@echo '\n======== $@ ========'
@@ -306,31 +335,6 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 	    sh /etc/netstart ${${host}_${dir}_IF}"
 .endfor
 	date >$@
-
-# Ping all addresses.  This ensures that the IP addresses are configured
-# and all routing table are set up to allow bidirectional packet flow.
-
-.for host dir in SRC OUT SRC TRANSP SRC TUNNEL \
-    IPS IN IPS OUT IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
-    RT IN RT OUT \
-    ECO IN ECO TUNNEL4 ECO TUNNEL6
-.for ping ipv in ping IPV4 ping6 IPV6
-TARGETS +=      ping-${host}_${dir}_${ipv}
-run-regress-ping-${host}_${dir}_${ipv}:
-	@echo '\n======== $@ ========'
-.if "${dir}" == TRANSP
-	${ping} -n -c 1 -w 2 -I ${SRC_TRANSP_${ipv}} ${${host}_${dir}_${ipv}}
-.else
-	${ping} -n -c 1 -w 2 ${${host}_${dir}_${ipv}}
-.endif
-.endfor
-.endfor
-
-REGRESS_TARGETS =	${TARGETS:S/^/run-regress-/}
-
-${REGRESS_TARGETS}: stamp-ipsec stamp-hostname
-
-CLEANFILES +=		addr.py *.pyc *.log stamp-* */hostname.*
 
 .PHONY: check-setup
 
