@@ -10,7 +10,7 @@
 # ECO is reflecting the ping and UDP and TCP echo packets.
 #
 # By choosing the net prefix of the outgoing packet the mode is selected
-# 4 -> 5 : transport v4
+# 5 -> 5 : transport v4
 # 4 -> 5 : transport v6
 # 8 -> c : tunnel v4 stack v4
 # 8 -> c : tunnel v4 stack v6
@@ -24,16 +24,22 @@
 #               1400        1300
 # +---+   0   +---+   1   +---+   2   +---+
 # |SRC| ----> |IPS| ----> |RT | ----> |ECO|
-# +---+ 48  5 +---+ cd    +---+    ef +---+
+# +---+ 458 5 +---+ cd    +---+    ef +---+
 #     out    in   out    in   out    in
 #
 
 PREFIX_IPV4 ?=	10.188.1
 PREFIX_IPV6 ?=	fdd7:e83e:66bc:1
 
+# IPv4 outgoing address is selected by route if address of cloning route,
+# so SRC_TRANSP_IPV4 and IPS_TRANSP_IPV4 must be in same net
+# IPv6 outgoing address is selected common prefix, 4 and 5 are close together
+# SRC_TRANSP_IPV6 and IPS_TRANSP_IPV6 should be in different network 
+# to avoid encryption of neighbor discovery packets
+
 SRC_OUT_IPV4 ?=	${PREFIX_IPV4}00.17
 SRC_OUT_IPV6 ?=	${PREFIX_IPV6}0::17
-SRC_TRANSP_IPV4 ?=	${PREFIX_IPV4}04.17
+SRC_TRANSP_IPV4 ?=	${PREFIX_IPV4}05.17
 SRC_TRANSP_IPV6 ?=	${PREFIX_IPV6}4::17
 SRC_TUNNEL_IPV4 ?=	${PREFIX_IPV4}08.17
 SRC_TUNNEL_IPV6 ?=	${PREFIX_IPV6}8::17
@@ -171,7 +177,10 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 	echo '${inet} alias ${SRC_${dir}_${ipv}} ${masklen}' >>$@.tmp
 .endfor
 .endfor
-.for host dir in IPS TRANSP RT IN ECO IN
+	echo '# IPS_TRANSP_IPV6/64 IPS_IN_IPV6' >>$@.tmp
+	echo '!route -q delete -inet6 ${IPS_TRANSP_IPV6}/64' >>$@.tmp
+	echo '!route add -inet6 ${IPS_TRANSP_IPV6}/64 ${IPS_IN_IPV6}' >>$@.tmp
+.for host dir in RT IN ECO IN
 	echo '# ${host}_${dir}/pfxlen IPS_IN' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
@@ -203,15 +212,9 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	echo '${inet} alias ${IPS_${dir}_${ipv}} ${masklen}' >>$@.tmp
 .endfor
 .endfor
-.for host dir in SRC TRANSP
-	echo '# ${host}_${dir}/pfxlen ${SRC_OUT_${ipv}}' >>$@.tmp
-.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
-	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
-	    >>$@.tmp
-	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
-	    ${SRC_OUT_${ipv}} >>$@.tmp
-.endfor
-.endfor
+	echo '# SRC_TRANSP_IPV6/64 SRC_OUT_IPV6' >>$@.tmp
+	echo '!route -q delete -inet6 ${SRC_TRANSP_IPV6}/64' >>$@.tmp
+	echo '!route add -inet6 ${SRC_TRANSP_IPV6}/64 ${SRC_OUT_IPV6}' >>$@.tmp
 .for host dir in SRC TUNNEL
 	echo '# ${host}_${dir}/pfxlen reject ${IPS_IN_${ipv}}' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
@@ -362,8 +365,7 @@ check-setup-src:
 .endfor
 .endfor
 	route -n get -inet ${IPS_TRANSP_IPV4} |\
-	    fgrep -q 'gateway: ${IPS_IN_IPV4}' \
-	    # IPS_TRANSP_IPV4 IPS_IN_IPV4
+	    egrep -q 'flags: .*(CLONING|CLONED)' # IPS_TRANSP_IPV4
 	route -n get -inet6 ${IPS_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${IPS_IN_IPV6}' \
 	    # IPS_TRANSP_IPV6 IPS_IN_IPV6
@@ -390,8 +392,7 @@ check-setup-ips:
 .endfor
 .endfor
 	ssh ${IPS_SSH} route -n get -inet ${SRC_TRANSP_IPV4} |\
-	    fgrep -q 'gateway: ${SRC_OUT_IPV4}' \
-	    # SRC_TRANSP_IPV4 SRC_OUT_IPV4
+	    egrep -q 'flags: .*(CLONING|CLONED)' # SRC_TRANSP_IPV4
 	ssh ${IPS_SSH} route -n get -inet6 ${SRC_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${SRC_OUT_IPV6}' \
 	    # SRC_TRANSP_IPV6 SRC_OUT_IPV6
