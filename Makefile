@@ -1,43 +1,24 @@
 #	$OpenBSD$
 
-# The following ports must be installed:
-#
-# python-2.7          interpreted object-oriented programming language
-# py-libdnet          python interface to libdnet
-# scapy               powerful interactive packet manipulation in python
-
-# Check wether all required python packages are installed.  If some
-# are missing print a warning and skip the tests, but do not fail.
-PYTHON_IMPORT !!= python2.7 -c 'from scapy.all import *' 2>&1 || true
-.if ! empty(PYTHON_IMPORT)
-regress:
-	@echo '${PYTHON_IMPORT}'
-	@echo install python and the scapy module for additional tests
-	@echo SKIPPED
-.endif
-
 # This test needs a manual setup of four machines
-# The setup is the same as for regress/sys/net/pf_fragment
-# Set up machines: SRC PF RT ECO
+# The setup is the same as for regress/sys/net/pf_forward
+# Set up machines: SRC IPS RT ECO
 # SRC is the machine where this makefile is running.
-# PF is running OpenBSD forwarding through pf, it is the test target.
+# IPS is running IPsec, it is reflecting or forwarding packets
 # RT is a router forwarding packets, maximum MTU is 1300.
 # ECO is reflecting the ping and UDP and TCP echo packets.
-# RDR does not exist, PF redirects the traffic to ECO.
-# AF does not exist, PF translates address family and sends to ECO.
-# RTT addresses exist on ECO, PF has no route and must use route-to RT
-# RPT addresses exist on SRC, PF has no route and must use reply-to SRC
 #
-# 45 transport v4
-# 45 transport v6
-# 8c tunnel v4 stack v4
-# 8c tunnel v4 stack v6
-# 8d tunnel v6 stack v4
-# 8d tunnel v6 stack v6
-# 8e tunnel v4 forward v4
-# 8e tunnel v4 forward v6
-# 8f tunnel v6 forward v4
-# 8f tunnel v6 forward v6
+# By choosing the net prefix of the outgoing packet the mode is selected
+# 4 -> 5 : transport v4
+# 4 -> 5 : transport v6
+# 8 -> c : tunnel v4 stack v4
+# 8 -> c : tunnel v4 stack v6
+# 8 -> d : tunnel v6 stack v4
+# 8 -> d : tunnel v6 stack v6
+# 8 -> e : tunnel v4 forward v4
+# 8 -> e : tunnel v4 forward v6
+# 8 -> f : tunnel v6 forward v4
+# 8 -> f : tunnel v6 forward v6
 #
 #               1400       1300
 # +---+   0   +---+   1   +---+   2   +---+
@@ -104,16 +85,14 @@ regress:
 
 .MAIN: all
 
-.if ! empty (PF_SSH)
 .if make (regress) || make (all)
-.BEGIN: pf.conf addr.py
+.BEGIN: ipsec.conf addr.py
 	@echo
 	${SUDO} true
 	ssh root@${IPS_SSH} true
 	ssh root@${RT_SSH} true
 	ssh root@${ECO_SSH} true
 	rm -f stamp-ipsec
-.endif
 .endif
 
 depend: addr.py
@@ -327,14 +306,6 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 	    sh /etc/netstart ${${host}_${dir}_IF}"
 .endfor
 	date >$@
-
-# Set variables so that make runs with and without obj directory.
-# Only do that if necessary to keep visible output short.
-.if ${.CURDIR} == ${.OBJDIR}
-PYTHON =	python2.7 ./
-.else
-PYTHON =	PYTHONPATH=${.OBJDIR} python2.7 ${.CURDIR}/
-.endif
 
 # Ping all addresses.  This ensures that the IP addresses are configured
 # and all routing table are set up to allow bidirectional packet flow.
