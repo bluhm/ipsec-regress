@@ -1,10 +1,11 @@
 #	$OpenBSD$
 
-# This test needs a manual setup of four machines
-# The setup is the same as for regress/sys/net/pf_forward
+# This test needs a manual setup of four machines, the make
+# target create-setup can be used distribute the configuration.
+# The setup is the same as for regress/sys/net/pf_forward.
 # Set up machines: SRC IPS RT ECO
 # SRC is the machine where this makefile is running.
-# IPS is running IPsec, it is reflecting or forwarding packets
+# IPS is running IPsec, it is reflecting or forwarding packets.
 # RT is a router forwarding packets, maximum MTU is 1300.
 # ECO is reflecting the ping and UDP and TCP echo packets.
 #
@@ -20,7 +21,7 @@
 # 8 -> f : tunnel v6 forward v4
 # 8 -> f : tunnel v6 forward v6
 #
-#               1400       1300
+#               1400        1300
 # +---+   0   +---+   1   +---+   2   +---+
 # |SRC| ----> |IPS| ----> |RT | ----> |ECO|
 # +---+ 48  5 +---+ cd    +---+    ef +---+
