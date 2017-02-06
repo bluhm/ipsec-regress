@@ -34,7 +34,7 @@ PREFIX_IPV6 ?=	fdd7:e83e:66bc:1
 # IPv4 outgoing address is selected by route if address of cloning route,
 # so SRC_TRANSP_IPV4 and IPS_TRANSP_IPV4 must be in same net
 # IPv6 outgoing address is selected common prefix, 4 and 5 are close together
-# SRC_TRANSP_IPV6 and IPS_TRANSP_IPV6 should be in different network 
+# SRC_TRANSP_IPV6 and IPS_TRANSP_IPV6 should be in different network
 # to avoid encryption of neighbor discovery packets
 
 SRC_OUT_IPV4 ?=	${PREFIX_IPV4}00.17
@@ -97,9 +97,7 @@ regress:
 .BEGIN: ipsec.conf addr.py
 	@echo
 	${SUDO} true
-	ssh root@${IPS_SSH} true
-	ssh root@${RT_SSH} true
-	ssh root@${ECO_SSH} true
+	ssh -t ${IPS_SSH} ${SUDO} true
 	rm -f stamp-ipsec
 .endif
 
@@ -131,9 +129,9 @@ stamp-ipsec: addr.py ipsec.conf
 	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f -
 	cat addr.py ${.CURDIR}/ipsec.conf | \
 	    ${SUDO} ipsecctl -f -
-	ssh root@${IPS_SSH} ipsecctl -F
+	ssh ${IPS_SSH} ${SUDO} ipsecctl -F
 	cat addr.py ${.CURDIR}/ipsec.conf | \
-	    ssh root@${IPS_SSH} ipsecctl -f - \
+	    ssh ${IPS_SSH} ${SUDO} ipsecctl -f - \
 	    -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
@@ -326,11 +324,11 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 	    /etc/hostname.${SRC_OUT_IF} &&\
 	    sh /etc/netstart ${SRC_OUT_IF}"
 .for host dir in IPS IN IPS OUT RT IN RT OUT ECO IN
-	ssh root@${${host}_SSH} "umask 027;\
+	ssh ${${host}_SSH} ${SUDO} "umask 027;\
 	    { sed '/^### regress/,\$$d' /etc/hostname.${${host}_${dir}_IF} &&\
 	    cat; } >/etc/hostname.${${host}_${dir}_IF}.tmp"\
 	    <${${host}_SSH}/hostname.${${host}_${dir}_IF}
-	ssh root@${${host}_SSH} "mv /etc/hostname.${${host}_${dir}_IF}.tmp\
+	ssh ${${host}_SSH} ${SUDO} "mv /etc/hostname.${${host}_${dir}_IF}.tmp\
 	    /etc/hostname.${${host}_${dir}_IF} &&\
 	    sh /etc/netstart ${${host}_${dir}_IF}"
 .endfor
