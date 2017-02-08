@@ -411,16 +411,16 @@ check-setup-ips:
 	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
 .endfor
+.for host dir in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
+	ssh ${IPS_SSH} netstat -nav -f ${inet} -p udp |\
+	    fgrep ' ${${host}_${dir}_${ipv}}.7 '  # ${host}_${dir}_${ipv}
+.endfor
 .endfor
 	ssh ${IPS_SSH} route -n get -inet ${SRC_TRANSP_IPV4} |\
 	    egrep -q 'flags: .*(CLONING|CLONED)' # SRC_TRANSP_IPV4
 	ssh ${IPS_SSH} route -n get -inet6 ${SRC_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${SRC_OUT_IPV6}' \
 	    # SRC_TRANSP_IPV6 SRC_OUT_IPV6
-.for host dir in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
-	ssh ${IPS_SSH} netstat -nav -f ${inet} -p udp |\
-	    fgrep ' ${${host}_${dir}_${ipv}}.7 '  # ${host}_${dir}_${ipv}
-.endfor
 
 check-setup-rt:
 	@echo '\n======== $@ ========'
