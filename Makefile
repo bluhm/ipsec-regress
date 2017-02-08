@@ -156,18 +156,6 @@ stamp-ipsec: addr.py ipsec.conf
 	    -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
-run-regress-ping-IPS_TRANSP_IPV6:
-	@echo '\n======== $@ ========'
-	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
-	@echo 'request does not create state and echo reply does not pass pf.'
-	@echo DISABLED
-
-run-regress-tcp-IPS_TRANSP_IPV6:
-	@echo '\n======== $@ ========'
-	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  TCP'
-	@echo 'SYN does not create state and SYN+ACK does not pass pf.'
-	@echo DISABLED
-
 # Ping all addresses.  This ensures that the IP addresses are configured
 # and all routing table are set up to allow bidirectional packet flow.
 
@@ -182,12 +170,24 @@ run-regress-ping-${host}_${dir}_${ipv}:
 
 .for sec in ESP AH
 
+run-regress-ping-IPS_${sec}_TRANSP_IPV6:
+	@echo '\n======== $@ ========'
+	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
+	@echo 'request does not create state and echo reply does not pass pf.'
+	@echo DISABLED
+
+run-regress-tcp-IPS_${sec}_TRANSP_IPV6:
+	@echo '\n======== $@ ========'
+	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  TCP'
+	@echo 'SYN does not create state and SYN+ACK does not pass pf.'
+	@echo DISABLED
+
 .for host dir in SRC TRANSP SRC TUNNEL \
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ping ipv in ping IPV4 ping6 IPV6
-TARGETS +=      ping-${host}_${dir}_${ipv}
-run-regress-ping-${host}_${dir}_${ipv}:
+TARGETS +=      ping-${host}_${sec}_${dir}_${ipv}
+run-regress-ping-${host}_${sec}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p esp | awk '/input ESP /{print $$1}' >esp.in
 	netstat -s -p esp | awk '/output ESP /{print $$1}' >esp.out
@@ -202,8 +202,8 @@ run-regress-ping-${host}_${dir}_${ipv}:
 .for host dir in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ipv in IPV4 IPV6
-TARGETS +=      udp-${host}_${dir}_${ipv}
-run-regress-udp-${host}_${dir}_${ipv}:
+TARGETS +=      udp-${host}_${sec}_${dir}_${ipv}
+run-regress-udp-${host}_${sec}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p esp | awk '/input ESP /{print $$1}' >esp.in
 	netstat -s -p esp | awk '/output ESP /{print $$1}' >esp.out
@@ -211,8 +211,8 @@ run-regress-udp-${host}_${dir}_${ipv}:
 	netstat -s -p esp | awk '/input ESP /{print $$1-1}' | diff esp.in -
 	netstat -s -p esp | awk '/output ESP /{print $$1-1}' | diff esp.out -
 
-TARGETS +=      tcp-${host}_${dir}_${ipv}
-run-regress-tcp-${host}_${dir}_${ipv}:
+TARGETS +=      tcp-${host}_${sec}_${dir}_${ipv}
+run-regress-tcp-${host}_${sec}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p esp | awk '/input ESP /{print $$1}' >esp.in
 	netstat -s -p esp | awk '/output ESP /{print $$1}' >esp.out
