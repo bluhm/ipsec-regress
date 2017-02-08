@@ -417,6 +417,10 @@ check-setup-ips:
 	ssh ${IPS_SSH} route -n get -inet6 ${SRC_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${SRC_OUT_IPV6}' \
 	    # SRC_TRANSP_IPV6 SRC_OUT_IPV6
+.for host dir in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
+	ssh ${IPS_SSH} netstat -nav -f ${inet} -p udp |\
+	    fgrep ' ${${host}_${dir}_${ipv}}.7 '  # ${host}_${dir}_${ipv}
+.endfor
 
 check-setup-rt:
 	@echo '\n======== $@ ========'
@@ -455,6 +459,10 @@ check-setup-eco:
 	ssh ${ECO_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    fgrep -q 'gateway: ${RT_OUT_${ipv}}' \
 	    # ${host}_${dir}_${ipv} RT_OUT_${ipv}
+.endfor
+.for host dir in ECO TUNNEL4 ECO TUNNEL6
+	ssh ${ECO_SSH} netstat -nav -f ${inet} -p udp |\
+	    fgrep ' ${${host}_${dir}_${ipv}}.7 '  # ${host}_${dir}_${ipv}
 .endfor
 .endfor
 
