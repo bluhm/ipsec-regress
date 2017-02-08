@@ -131,11 +131,14 @@ addr.py: Makefile
 .endfor
 .endfor
 .endfor
+.for sec in ESP AH
 .for host dir in SRC TRANSP SRC TUNNEL \
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ipv in IPV4 IPV6
-	echo '${host}_${dir}_${ipv}="${${host}_${dir}_${ipv}}"' >>$@.tmp
+	echo '${host}_${sec}_${dir}_${ipv}="${${host}_${sec}_${dir}_${ipv}}"'\
+	    >>$@.tmp
+.endfor
 .endfor
 .endfor
 	mv $@.tmp $@
