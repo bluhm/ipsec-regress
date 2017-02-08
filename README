@@ -7,4 +7,4 @@ machine, the test is considered successful.
 Currently ICMP ping and UDP packets are encrypted with ESP.  Transport
 and tunnel mode are tested with all combinations of IPv4 and IPv6.
 
-Tests for TCP and path MTU discovery are planned.
+Tests for AH/IPCOMP/IPIP with TCP and path MTU discovery are planned.
