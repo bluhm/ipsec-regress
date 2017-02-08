@@ -174,6 +174,15 @@ run-regress-udp-${host}_${dir}_${ipv}:
 	echo $$$$ | nc -n -u -w 1 ${${host}_${dir}_${ipv}} 7 | fgrep $$$$
 	netstat -s -p esp | awk '/input ESP /{print $$1-1}' | diff esp.in -
 	netstat -s -p esp | awk '/output ESP /{print $$1-1}' | diff esp.out -
+
+TARGETS +=      tcp-${host}_${dir}_${ipv}
+run-regress-tcp-${host}_${dir}_${ipv}:
+	@echo '\n======== $@ ========'
+	netstat -s -p esp | awk '/input ESP /{print $$1}' >esp.in
+	netstat -s -p esp | awk '/output ESP /{print $$1}' >esp.out
+	echo $$$$ | nc -n -N -w 3 ${${host}_${dir}_${ipv}} 7 | fgrep $$$$
+	netstat -s -p esp | awk '/input ESP /{print $$1-4}' | diff esp.in -
+	netstat -s -p esp | awk '/output ESP /{print $$1-6}' | diff esp.out -
 .endfor
 .endfor
 
