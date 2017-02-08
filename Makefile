@@ -429,6 +429,7 @@ check-setup-ips:
 	ssh ${IPS_SSH} netstat -nav -f ${inet} -p udp |\
 	    fgrep ' ${${host}_${dir}_${ipv}}.7 '  # ${host}_${dir}_${ipv}
 .endfor
+	ssh ${ECO_SSH} netstat -na -f ${inet} -p tcp | fgrep ' *.7 '
 .endfor
 	ssh ${IPS_SSH} route -n get -inet ${SRC_TRANSP_IPV4} |\
 	    egrep -q 'flags: .*(CLONING|CLONED)' # SRC_TRANSP_IPV4
@@ -478,6 +479,7 @@ check-setup-eco:
 	ssh ${ECO_SSH} netstat -nav -f ${inet} -p udp |\
 	    fgrep ' ${${host}_${dir}_${ipv}}.7 '  # ${host}_${dir}_${ipv}
 .endfor
+	ssh ${ECO_SSH} netstat -na -f ${inet} -p tcp | fgrep ' *.7 '
 .endfor
 
 .include <bsd.regress.mk>
