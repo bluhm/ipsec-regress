@@ -72,6 +72,7 @@ ECO_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}f::72
 # setup.  To control the remote machine you need a hostname for
 # ssh to log in.
 #
+# IPS and ECO need inetd echo service on TRANSP and TUNNEL addresses.
 # Run make create-setup to copy hostname.if files to the machines
 # Run make check-setup to see if you got the setup correct.
 
