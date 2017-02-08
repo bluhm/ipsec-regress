@@ -189,12 +189,12 @@ run-regress-tcp-IPS_${sec}_TRANSP_IPV6:
 TARGETS +=      ping-${host}_${sec}_${dir}_${ipv}
 run-regress-ping-${host}_${sec}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
-	netstat -s -p esp | awk '/input ESP /{print $$1}' >esp.in
-	netstat -s -p esp | awk '/output ESP /{print $$1}' >esp.out
+	netstat -s -p ${sec} | awk '/input ESP /{print $$1}' >pkt.in
+	netstat -s -p ${sec} | awk '/output ESP /{print $$1}' >pkt.out
 	${ping} -n -c 1 -w 2 ${${host}_${sec}_${dir}_${ipv}}
 .if "${host}" != SRC
-	netstat -s -p esp | awk '/input ESP /{print $$1-1}' | diff esp.in -
-	netstat -s -p esp | awk '/output ESP /{print $$1-1}' | diff esp.out -
+	netstat -s -p ${sec} | awk '/input ESP /{print $$1-1}' | diff pkt.in -
+	netstat -s -p ${sec} | awk '/output ESP /{print $$1-1}' | diff pkt.out -
 .endif
 .endfor
 .endfor
@@ -205,20 +205,20 @@ run-regress-ping-${host}_${sec}_${dir}_${ipv}:
 TARGETS +=      udp-${host}_${sec}_${dir}_${ipv}
 run-regress-udp-${host}_${sec}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
-	netstat -s -p esp | awk '/input ESP /{print $$1}' >esp.in
-	netstat -s -p esp | awk '/output ESP /{print $$1}' >esp.out
+	netstat -s -p ${sec} | awk '/input ESP /{print $$1}' >pkt.in
+	netstat -s -p ${sec} | awk '/output ESP /{print $$1}' >pkt.out
 	echo $$$$ | nc -n -u -w 1 ${${host}_${sec}_${dir}_${ipv}} 7 | fgrep $$$$
-	netstat -s -p esp | awk '/input ESP /{print $$1-1}' | diff esp.in -
-	netstat -s -p esp | awk '/output ESP /{print $$1-1}' | diff esp.out -
+	netstat -s -p ${sec} | awk '/input ESP /{print $$1-1}' | diff pkt.in -
+	netstat -s -p ${sec} | awk '/output ESP /{print $$1-1}' | diff pkt.out -
 
 TARGETS +=      tcp-${host}_${sec}_${dir}_${ipv}
 run-regress-tcp-${host}_${sec}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
-	netstat -s -p esp | awk '/input ESP /{print $$1}' >esp.in
-	netstat -s -p esp | awk '/output ESP /{print $$1}' >esp.out
+	netstat -s -p ${sec} | awk '/input ESP /{print $$1}' >pkt.in
+	netstat -s -p ${sec} | awk '/output ESP /{print $$1}' >pkt.out
 	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${dir}_${ipv}} 7 | fgrep $$$$
-	netstat -s -p esp | awk '/input ESP /{print $$1-4}' | diff esp.in -
-	netstat -s -p esp | awk '/output ESP /{print $$1-6}' | diff esp.out -
+	netstat -s -p ${sec} | awk '/input ESP /{print $$1-4}' | diff pkt.in -
+	netstat -s -p ${sec} | awk '/output ESP /{print $$1-6}' | diff pkt.out -
 .endfor
 .endfor
 
