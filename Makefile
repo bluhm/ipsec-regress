@@ -366,12 +366,11 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 	    /etc/hostname.${SRC_OUT_IF} &&\
 	    sh /etc/netstart ${SRC_OUT_IF}"
 .for host dir in IPS IN IPS OUT RT IN RT OUT ECO IN
-	ssh ${${host}_SSH} ${SUDO} sh -c "umask 027;\
+	ssh root@${${host}_SSH} "umask 027;\
 	    { sed '/^### regress/,\$$d' /etc/hostname.${${host}_${dir}_IF} &&\
 	    cat; } >/etc/hostname.${${host}_${dir}_IF}.tmp"\
 	    <${${host}_SSH}/hostname.${${host}_${dir}_IF}
-	ssh ${${host}_SSH} ${SUDO} sh -c\
-	    "mv /etc/hostname.${${host}_${dir}_IF}.tmp\
+	ssh root@${${host}_SSH} "mv /etc/hostname.${${host}_${dir}_IF}.tmp\
 	    /etc/hostname.${${host}_${dir}_IF} &&\
 	    sh /etc/netstart ${${host}_${dir}_IF}"
 .endfor
