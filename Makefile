@@ -305,12 +305,12 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	echo '!route -q delete -inet6 ${SRC_${sec}_TRANSP_IPV6}/64' >>$@.tmp
 	echo '!route add -inet6 ${SRC_${sec}_TRANSP_IPV6}/64 ${SRC_OUT_IPV6}'\
 	    >>$@.tmp
-.for host mode in SRC TUNNEL
-	echo '# ${host}_${sec}_${mode}/pfxlen reject ${IPS_IN_${ipv}}' >>$@.tmp
+.for mode in TUNNEL
+	echo '# SRC_${sec}_${mode}/pfxlen reject ${IPS_IN_${ipv}}' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet}\
-	    ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
-	echo '!route add -${inet} ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}\
+	    ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}\
 	    -reject ${IPS_IN_${ipv}}' >>$@.tmp
 .endfor
 .endfor
