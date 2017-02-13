@@ -510,7 +510,7 @@ check-setup-src:
 check-setup-ips:
 	@echo '\n======== $@ ========'
 .for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
-.for host dir in IPS IN IPS OUT IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
+.for host dir in IPS IN IPS OUT
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${${host}_${dir}_${ipv}} \
 	    # ${host}_${dir}_${ipv}
 	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
@@ -518,26 +518,42 @@ check-setup-ips:
 .endfor
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${SRC_OUT_${ipv}}  # SRC_OUT_${ipv}
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${RT_IN_${ipv}}  # RT_IN_${ipv}
-.for host dir in RT OUT ECO IN ECO TUNNEL4 ECO TUNNEL6
+.for host dir in RT OUT ECO IN
 	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    fgrep -q 'gateway: ${RT_IN_${ipv}}' \
 	    # ${host}_${dir}_${ipv} RT_IN_${ipv}
 .endfor
-.for host dir in SRC TUNNEL
-	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
-	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
+.for sec in ESP AH
+.for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
+	ssh ${IPS_SSH} ${ping} -n -c 1 ${${host}_${sec}_${mode}_${ipv}} \
+	    # ${host}_${sec}_${mode}_${ipv}
+	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
+	    grep -q 'flags: .*LOCAL'  # ${host}_${sec}_${mode}_${ipv}
 .endfor
-.for host dir in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
+.for host mode in ECO TUNNEL4 ECO TUNNEL6
+	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
+	    fgrep -q 'gateway: ${RT_IN_${ipv}}' \
+	    # ${host}_${sec}_${mode}_${ipv} RT_IN_${ipv}
+.endfor
+.for host mode in SRC TUNNEL
+	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
+	    grep -q 'flags: .*REJECT'  # ${host}_${sec}_${mode}_${ipv}
+.endfor
+.for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
 	ssh ${IPS_SSH} netstat -nav -f ${inet} -p udp |\
-	    fgrep ' ${${host}_${dir}_${ipv}}.7 '  # ${host}_${dir}_${ipv}
+	    fgrep ' ${${host}_${sec}_${mode}_${ipv}}.7 ' \
+	    # ${host}_${sec}_${mode}_${ipv}
+.endfor
 .endfor
 	ssh ${ECO_SSH} netstat -na -f ${inet} -p tcp | fgrep ' *.7 '
 .endfor
-	ssh ${IPS_SSH} route -n get -inet ${SRC_TRANSP_IPV4} |\
-	    egrep -q 'flags: .*(CLONING|CLONED)'  # SRC_TRANSP_IPV4
-	ssh ${IPS_SSH} route -n get -inet6 ${SRC_TRANSP_IPV6} |\
+.for sec in ESP AH
+	ssh ${IPS_SSH} route -n get -inet ${SRC_${sec}_TRANSP_IPV4} |\
+	    egrep -q 'flags: .*(CLONING|CLONED)'  # SRC_${sec}_TRANSP_IPV4
+	ssh ${IPS_SSH} route -n get -inet6 ${SRC_${sec}_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${SRC_OUT_IPV6}' \
-	    # SRC_TRANSP_IPV6 SRC_OUT_IPV6
+	    # SRC_${sec}_TRANSP_IPV6 SRC_OUT_IPV6
+.endfor
 
 check-setup-rt:
 	@echo '\n======== $@ ========'
