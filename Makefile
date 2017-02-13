@@ -475,7 +475,7 @@ check-setup: check-setup-src check-setup-ips check-setup-rt check-setup-eco
 check-setup-src:
 	@echo '\n======== $@ ========'
 .for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
-.for host dir in SRC OUT SRC TRANSP SRC TUNNEL
+.for host dir in SRC OUT
 	${ping} -n -c 1 ${${host}_${dir}_${ipv}}  # ${host}_${dir}_${ipv}
 	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
@@ -486,16 +486,26 @@ check-setup-src:
 	    fgrep -q 'gateway: ${IPS_IN_${ipv}}' \
 	    # ${host}_${dir}_${ipv} IPS_IN_${ipv}
 .endfor
-.for host dir in IPS TUNNEL4 IPS TUNNEL6 ECO TUNNEL4 ECO TUNNEL6
-	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
-	    grep -q 'flags: .*REJECT'  # ${host}_${dir}_${ipv}
+.for sec in ESP AH
+.for host mode in SRC TRANSP SRC TUNNEL
+	${ping} -n -c 1 ${${host}_${sec}_${mode}_${ipv}} \
+	    # ${host}_${sec}_${mode}_${ipv}
+	route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
+	    grep -q 'flags: .*LOCAL'  # ${host}_${sec}_${mode}_${ipv}
+.endfor
+.for host mode in IPS TUNNEL4 IPS TUNNEL6 ECO TUNNEL4 ECO TUNNEL6
+	route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
+	    grep -q 'flags: .*REJECT'  # ${host}_${sec}_${mode}_${ipv}
 .endfor
 .endfor
-	route -n get -inet ${IPS_TRANSP_IPV4} |\
-	    egrep -q 'flags: .*(CLONING|CLONED)' # IPS_TRANSP_IPV4
-	route -n get -inet6 ${IPS_TRANSP_IPV6} |\
+.endfor
+.for sec in ESP AH
+	route -n get -inet ${IPS_${sec}_TRANSP_IPV4} |\
+	    egrep -q 'flags: .*(CLONING|CLONED)'  # IPS_${sec}_TRANSP_IPV4
+	route -n get -inet6 ${IPS_${sec}_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${IPS_IN_IPV6}' \
-	    # IPS_TRANSP_IPV6 IPS_IN_IPV6
+	    # IPS_${sec}_TRANSP_IPV6 IPS_IN_IPV6
+.endfor
 
 check-setup-ips:
 	@echo '\n======== $@ ========'
@@ -524,7 +534,7 @@ check-setup-ips:
 	ssh ${ECO_SSH} netstat -na -f ${inet} -p tcp | fgrep ' *.7 '
 .endfor
 	ssh ${IPS_SSH} route -n get -inet ${SRC_TRANSP_IPV4} |\
-	    egrep -q 'flags: .*(CLONING|CLONED)' # SRC_TRANSP_IPV4
+	    egrep -q 'flags: .*(CLONING|CLONED)'  # SRC_TRANSP_IPV4
 	ssh ${IPS_SSH} route -n get -inet6 ${SRC_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${SRC_OUT_IPV6}' \
 	    # SRC_TRANSP_IPV6 SRC_OUT_IPV6
