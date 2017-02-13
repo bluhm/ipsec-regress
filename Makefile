@@ -588,21 +588,35 @@ check-setup-rt:
 check-setup-eco:
 	@echo '\n======== $@ ========'
 .for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
-.for host dir in ECO IN ECO TUNNEL4 ECO TUNNEL6
+.for host dir in ECO IN
 	ssh ${ECO_SSH} ${ping} -n -c 1 ${${host}_${dir}_${ipv}} \
 	    # ${host}_${dir}_${ipv}
 	ssh ${ECO_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
 .endfor
 	ssh ${ECO_SSH} ${ping} -n -c 1 ${RT_OUT_${ipv}}  # RT_OUT_${ipv}
-.for host dir in RT IN IPS OUT IPS IN SRC OUT SRC TUNNEL
+.for host dir in RT IN IPS OUT IPS IN SRC OUT
 	ssh ${ECO_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    fgrep -q 'gateway: ${RT_OUT_${ipv}}' \
 	    # ${host}_${dir}_${ipv} RT_OUT_${ipv}
 .endfor
-.for host dir in ECO TUNNEL4 ECO TUNNEL6
+.for sec in ESP AH
+.for host mode in ECO TUNNEL4 ECO TUNNEL6
+	ssh ${ECO_SSH} ${ping} -n -c 1 ${${host}_${sec}_${mode}_${ipv}} \
+	    # ${host}_${sec}_${mode}_${ipv}
+	ssh ${ECO_SSH} route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
+	    grep -q 'flags: .*LOCAL'  # ${host}_${sec}_${mode}_${ipv}
+.endfor
+.for host mode in SRC TUNNEL
+	ssh ${ECO_SSH} route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
+	    fgrep -q 'gateway: ${RT_OUT_${ipv}}' \
+	    # ${host}_${sec}_${mode}_${ipv} RT_OUT_${ipv}
+.endfor
+.for host mode in ECO TUNNEL4 ECO TUNNEL6
 	ssh ${ECO_SSH} netstat -nav -f ${inet} -p udp |\
-	    fgrep ' ${${host}_${dir}_${ipv}}.7 '  # ${host}_${dir}_${ipv}
+	    fgrep ' ${${host}_${sec}_${mode}_${ipv}}.7 ' \
+	    # ${host}_${sec}_${mode}_${ipv}
+.endfor
 .endfor
 	ssh ${ECO_SSH} netstat -na -f ${inet} -p tcp | fgrep ' *.7 '
 .endfor
