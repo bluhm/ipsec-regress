@@ -247,32 +247,41 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
 	echo '### regress ipsec $@' >$@.tmp
-.for dir in OUT TRANSP TUNNEL
-	echo '# SRC_${dir}' >>$@.tmp
+	echo '# SRC_OUT' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
-	echo '${inet} alias ${SRC_${dir}_${ipv}} ${masklen}' >>$@.tmp
+	echo '${inet} alias ${SRC_OUT_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.for sec in ESP AH
+	echo '## SRC_${sec}' >>$@.tmp
+.for dir in TRANSP TUNNEL
+	echo '# SRC_${sec}_${dir}' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${SRC_${sec}_${dir}_${ipv}} ${masklen}' >>$@.tmp
 .endfor
 .endfor
-	echo '# IPS_TRANSP_IPV6/64 IPS_IN_IPV6' >>$@.tmp
-	echo '!route -q delete -inet6 ${IPS_TRANSP_IPV6}/64' >>$@.tmp
-	echo '!route add -inet6 ${IPS_TRANSP_IPV6}/64 ${IPS_IN_IPV6}' >>$@.tmp
+	echo '# IPS_${sec}_TRANSP_IPV6/64 IPS_IN_IPV6' >>$@.tmp
+	echo '!route -q delete -inet6 ${IPS_${sec}_TRANSP_IPV6}/64' >>$@.tmp
+	echo '!route add -inet6 ${IPS_${sec}_TRANSP_IPV6}/64 ${IPS_IN_IPV6}'\
+	    >>$@.tmp
 .for host dir in RT IN ECO IN
 	echo '# ${host}_${dir}/pfxlen IPS_IN' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
 	    >>$@.tmp
-	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
-	    ${IPS_IN_${ipv}} >>$@.tmp
+	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}\
+	    ${IPS_IN_${ipv}}' >>$@.tmp
 .endfor
 .endfor
 .for host in IPS ECO
 .for dir in TUNNEL4 TUNNEL6
-	echo '# ${host}_${dir}/pfxlen reject ${SRC_TUNNEL_${ipv}}' >>$@.tmp
+	echo '# ${host}_${sec}_${dir}/pfxlen reject\
+	    ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
-	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
-	    >>$@.tmp
-	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
-	    -reject ${SRC_TUNNEL_${ipv}} >>$@.tmp
+	echo '!route -q delete -${inet}\
+	    ${${host}_${sec}_${dir}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${${host}_${sec}_${dir}_${ipv}}/${pfxlen}\
+	    -reject ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
+.endfor
 .endfor
 .endfor
 .endfor
