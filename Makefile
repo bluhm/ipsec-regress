@@ -146,7 +146,7 @@ addr.py: Makefile
 .endfor
 .endfor
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPIP
 .for host mode in SRC TRANSP SRC TUNNEL \
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
