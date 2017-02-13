@@ -291,22 +291,28 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
 	echo '### regress ipsec $@' >$@.tmp
-.for dir in IN TRANSP
-	echo '# IPS_${dir}' >>$@.tmp
+	echo '# IPS_IN' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
-	echo '${inet} alias ${IPS_${dir}_${ipv}} ${masklen}' >>$@.tmp
+	echo '${inet} alias ${IPS_IN_${ipv}} ${masklen}' >>$@.tmp
 .endfor
+.for sec in ESP AH
+	echo '## IPS_${sec}' >>$@.tmp
+	echo '# IPS_${sec}_TRANSP' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${IPS_${sec}_TRANSP_${ipv}} ${masklen}' >>$@.tmp
 .endfor
-	echo '# SRC_TRANSP_IPV6/64 SRC_OUT_IPV6' >>$@.tmp
-	echo '!route -q delete -inet6 ${SRC_TRANSP_IPV6}/64' >>$@.tmp
-	echo '!route add -inet6 ${SRC_TRANSP_IPV6}/64 ${SRC_OUT_IPV6}' >>$@.tmp
-.for host dir in SRC TUNNEL
-	echo '# ${host}_${dir}/pfxlen reject ${IPS_IN_${ipv}}' >>$@.tmp
-.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
-	echo '!route -q delete -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
+	echo '# SRC_${sec}_TRANSP_IPV6/64 SRC_OUT_IPV6' >>$@.tmp
+	echo '!route -q delete -inet6 ${SRC_${sec}_TRANSP_IPV6}/64' >>$@.tmp
+	echo '!route add -inet6 ${SRC_${sec}_TRANSP_IPV6}/64 ${SRC_OUT_IPV6}'\
 	    >>$@.tmp
-	echo '!route add -${inet} ${${host}_${dir}_${ipv}}/${pfxlen}'\
-	    -reject ${IPS_IN_${ipv}} >>$@.tmp
+.for host mode in SRC TUNNEL
+	echo '# ${host}_${sec}_${mode}/pfxlen reject ${IPS_IN_${ipv}}' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet}\
+	    ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}\
+	    -reject ${IPS_IN_${ipv}}' >>$@.tmp
+.endfor
 .endfor
 .endfor
 	mv $@.tmp $@
