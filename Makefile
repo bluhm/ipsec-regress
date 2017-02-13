@@ -132,11 +132,11 @@ addr.py: Makefile
 .endfor
 .endfor
 .for sec in ESP AH
-.for host dir in SRC TRANSP SRC TUNNEL \
+.for host mode in SRC TRANSP SRC TUNNEL \
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ipv in IPV4 IPV6
-	echo '${host}_${sec}_${dir}_${ipv}="${${host}_${sec}_${dir}_${ipv}}"'\
+	echo '${host}_${sec}_${mode}_${ipv}="${${host}_${sec}_${mode}_${ipv}}"'\
 	    >>$@.tmp
 .endfor
 .endfor
@@ -182,16 +182,16 @@ run-regress-tcp-IPS_${sec}_TRANSP_IPV6:
 	@echo 'SYN does not create state and SYN+ACK does not pass pf.'
 	@echo DISABLED
 
-.for host dir in SRC TRANSP SRC TUNNEL \
+.for host mode in SRC TRANSP SRC TUNNEL \
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ping ipv in ping IPV4 ping6 IPV6
-TARGETS +=      ping-${host}_${sec}_${dir}_${ipv}
-run-regress-ping-${host}_${sec}_${dir}_${ipv}:
+TARGETS +=      ping-${host}_${sec}_${mode}_${ipv}
+run-regress-ping-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec} | awk '/input ${sec} /{print $$1}' >pkt.in
 	netstat -s -p ${sec} | awk '/output ${sec} /{print $$1}' >pkt.out
-	${ping} -n -c 1 -w 2 ${${host}_${sec}_${dir}_${ipv}}
+	${ping} -n -c 1 -w 2 ${${host}_${sec}_${mode}_${ipv}}
 .if "${host}" != SRC
 	netstat -s -p ${sec} | awk '/input ${sec} /{print $$1-1}' |\
 	    diff pkt.in -
@@ -201,27 +201,27 @@ run-regress-ping-${host}_${sec}_${dir}_${ipv}:
 .endfor
 .endfor
 
-.for host dir in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
+.for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ipv in IPV4 IPV6
-TARGETS +=      udp-${host}_${sec}_${dir}_${ipv}
-run-regress-udp-${host}_${sec}_${dir}_${ipv}:
+TARGETS +=      udp-${host}_${sec}_${mode}_${ipv}
+run-regress-udp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec} | awk '/input ${sec} /{print $$1}' >pkt.in
 	netstat -s -p ${sec} | awk '/output ${sec} /{print $$1}' >pkt.out
-	echo $$$$ | nc -n -u -w 1 ${${host}_${sec}_${dir}_${ipv}} 7 |\
+	echo $$$$ | nc -n -u -w 1 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
 	netstat -s -p ${sec} | awk '/input ${sec} /{print $$1-1}' |\
 	    diff pkt.in -
 	netstat -s -p ${sec} | awk '/output ${sec} /{print $$1-1}' |\
 	    diff pkt.out -
 
-TARGETS +=      tcp-${host}_${sec}_${dir}_${ipv}
-run-regress-tcp-${host}_${sec}_${dir}_${ipv}:
+TARGETS +=      tcp-${host}_${sec}_${mode}_${ipv}
+run-regress-tcp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec} | awk '/input ${sec} /{print $$1}' >pkt.in
 	netstat -s -p ${sec} | awk '/output ${sec} /{print $$1}' >pkt.out
-	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${dir}_${ipv}} 7 |\
+	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
 	netstat -s -p ${sec} | awk '/input ${sec} /{print $$1-4}' |\
 	    diff pkt.in -
@@ -253,10 +253,10 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 .endfor
 .for sec in ESP AH
 	echo '## SRC_${sec}' >>$@.tmp
-.for dir in TRANSP TUNNEL
-	echo '# SRC_${sec}_${dir}' >>$@.tmp
+.for mode in TRANSP TUNNEL
+	echo '# SRC_${sec}_${mode}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
-	echo '${inet} alias ${SRC_${sec}_${dir}_${ipv}} ${masklen}' >>$@.tmp
+	echo '${inet} alias ${SRC_${sec}_${mode}_${ipv}} ${masklen}' >>$@.tmp
 .endfor
 .endfor
 	echo '# IPS_${sec}_TRANSP_IPV6/64 IPS_IN_IPV6' >>$@.tmp
@@ -273,13 +273,13 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 .endfor
 .endfor
 .for host in IPS ECO
-.for dir in TUNNEL4 TUNNEL6
-	echo '# ${host}_${sec}_${dir}/pfxlen reject\
+.for mode in TUNNEL4 TUNNEL6
+	echo '# ${host}_${sec}_${mode}/pfxlen reject\
 	    ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet}\
-	    ${${host}_${sec}_${dir}_${ipv}}/${pfxlen}' >>$@.tmp
-	echo '!route add -${inet} ${${host}_${sec}_${dir}_${ipv}}/${pfxlen}\
+	    ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}\
 	    -reject ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
 .endfor
 .endfor
