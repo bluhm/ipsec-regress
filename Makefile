@@ -520,6 +520,7 @@ check-setup-src:
 	route -n get -inet6 ${IPS_${sec}_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${IPS_IN_IPV6}' \
 	    # IPS_${sec}_TRANSP_IPV6 IPS_IN_IPV6
+	sysctl net.inet.${sec:L}.enable | fgrep =1
 .endfor
 
 check-setup-ips:
@@ -568,6 +569,7 @@ check-setup-ips:
 	ssh ${IPS_SSH} route -n get -inet6 ${SRC_${sec}_TRANSP_IPV6} |\
 	    fgrep -q 'gateway: ${SRC_OUT_IPV6}' \
 	    # SRC_${sec}_TRANSP_IPV6 SRC_OUT_IPV6
+	ssh ${IPS_SSH} sysctl net.inet.${sec:L}.enable | fgrep =1
 .endfor
 
 check-setup-rt:
