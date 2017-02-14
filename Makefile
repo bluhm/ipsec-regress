@@ -183,7 +183,7 @@ run-regress-ping-${host}_${dir}_${ipv}:
 .endfor
 .endfor
 
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 
 run-regress-ping-IPS_${sec}_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
@@ -266,7 +266,7 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${SRC_OUT_${ipv}} ${masklen}' >>$@.tmp
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 	echo '## SRC_${sec}' >>$@.tmp
 .for mode in TRANSP TUNNEL
 	echo '# SRC_${sec}_${mode}' >>$@.tmp
@@ -310,7 +310,7 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${IPS_IN_${ipv}} ${masklen}' >>$@.tmp
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 	echo '## IPS_${sec}' >>$@.tmp
 	echo '# IPS_${sec}_TRANSP' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
@@ -348,7 +348,7 @@ ${IPS_SSH}/hostname.${IPS_OUT_IF}: Makefile
 	echo '!route add -${inet} ${ECO_IN_${ipv}}/${pfxlen} ${RT_IN_${ipv}}'\
 	    >>$@.tmp
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 	echo '## IPS_${sec}' >>$@.tmp
 .for mode in TUNNEL4 TUNNEL6
 	echo '# IPS_${sec}_${mode}' >>$@.tmp
@@ -384,7 +384,7 @@ ${RT_SSH}/hostname.${RT_IN_IF}: Makefile
 	echo '!route add -${inet} ${SRC_OUT_${ipv}}/${pfxlen}'\
 	    ${IPS_OUT_${ipv}} >>$@.tmp
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 	echo '## IPS_${sec}' >>$@.tmp
 .for mode in TUNNEL
 	echo '# SRC_${mode}/pfxlen IPS_OUT' >>$@.tmp
@@ -407,7 +407,7 @@ ${RT_SSH}/hostname.${RT_OUT_IF}: Makefile
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${RT_OUT_${ipv}} ${masklen}' >>$@.tmp
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 	echo '## IPS_${sec}' >>$@.tmp
 .for mode in TUNNEL4 TUNNEL6
 	echo '# ECO_${sec}_${mode}/pfxlen ECO_IN' >>$@.tmp
@@ -439,7 +439,7 @@ ${ECO_SSH}/hostname.${ECO_IN_IF}: Makefile
 	    ${RT_OUT_${ipv}}' >>$@.tmp
 .endfor
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 	echo '## IPS_${sec}' >>$@.tmp
 .for mode in TUNNEL4 TUNNEL6
 	echo '# ECO_${sec}_${mode}' >>$@.tmp
@@ -501,7 +501,7 @@ check-setup-src:
 	    fgrep -q 'gateway: ${IPS_IN_${ipv}}' \
 	    # ${host}_${dir}_${ipv} IPS_IN_${ipv}
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 .for host mode in SRC TRANSP SRC TUNNEL
 	${ping} -n -c 1 ${${host}_${sec}_${mode}_${ipv}} \
 	    # ${host}_${sec}_${mode}_${ipv}
@@ -514,7 +514,7 @@ check-setup-src:
 .endfor
 .endfor
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 	route -n get -inet ${IPS_${sec}_TRANSP_IPV4} |\
 	    egrep -q 'flags: .*(CLONING|CLONED)'  # IPS_${sec}_TRANSP_IPV4
 	route -n get -inet6 ${IPS_${sec}_TRANSP_IPV6} |\
@@ -539,7 +539,7 @@ check-setup-ips:
 	    fgrep -q 'gateway: ${RT_IN_${ipv}}' \
 	    # ${host}_${dir}_${ipv} RT_IN_${ipv}
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 .for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${${host}_${sec}_${mode}_${ipv}} \
 	    # ${host}_${sec}_${mode}_${ipv}
@@ -563,7 +563,7 @@ check-setup-ips:
 .endfor
 	ssh ${ECO_SSH} netstat -na -f ${inet} -p tcp | fgrep ' *.7 '
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 	ssh ${IPS_SSH} route -n get -inet ${SRC_${sec}_TRANSP_IPV4} |\
 	    egrep -q 'flags: .*(CLONING|CLONED)'  # SRC_${sec}_TRANSP_IPV4
 	ssh ${IPS_SSH} route -n get -inet6 ${SRC_${sec}_TRANSP_IPV6} |\
@@ -588,7 +588,7 @@ check-setup-rt:
 	    # ${host}_${dir}_${ipv} IPS_OUT_${ipv}
 .endfor
 	ssh ${RT_SSH} ${ping} -n -c 1 ${ECO_IN_${ipv}}  # ECO_IN_${ipv}
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 .for host mode in SRC TUNNEL
 	ssh ${RT_SSH} route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
 	    fgrep -q 'gateway: ${IPS_OUT_${ipv}}' \
@@ -617,7 +617,7 @@ check-setup-eco:
 	    fgrep -q 'gateway: ${RT_OUT_${ipv}}' \
 	    # ${host}_${dir}_${ipv} RT_OUT_${ipv}
 .endfor
-.for sec in ESP AH
+.for sec in ESP AH IPCOMP
 .for host mode in ECO TUNNEL4 ECO TUNNEL6
 	ssh ${ECO_SSH} ${ping} -n -c 1 ${${host}_${sec}_${mode}_${ipv}} \
 	    # ${host}_${sec}_${mode}_${ipv}
