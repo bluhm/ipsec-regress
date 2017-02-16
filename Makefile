@@ -223,7 +223,7 @@ run-regress-ping-${host}_${sec}_${mode}_${ipv}:
 	    awk '/input ${sec} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/output ${sec} /{print $$1}' >pkt.out
-	${ping} -n -c 1 -w 2 ${${host}_${sec}_${mode}_${ipv}}
+	${ping} -s 1000 -n -c 1 -w 2 ${${host}_${sec}_${mode}_${ipv}}
 .if "${host}" != SRC
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1-1}' |\
