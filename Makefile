@@ -183,19 +183,19 @@ run-regress-ping-${host}_${dir}_${ipv}:
 .endfor
 .endfor
 
-.for sec in ESP AH IPCOMP
-
-run-regress-ping-IPS_${sec}_TRANSP_IPV6:
+run-regress-ping-IPS_ESP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
 	@echo 'request does not create state and echo reply does not pass pf.'
 	@echo DISABLED
 
-run-regress-tcp-IPS_${sec}_TRANSP_IPV6:
+run-regress-tcp-IPS_ESP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  TCP'
 	@echo 'SYN does not create state and SYN+ACK does not pass pf.'
 	@echo DISABLED
+
+.for sec in ESP AH IPCOMP
 
 .for host mode in SRC TRANSP SRC TUNNEL \
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
