@@ -208,8 +208,9 @@ run-regress-ping-IPS_IPCOMP_TRANSP_IPV6:
     ECO TUNNEL4 ECO TUNNEL6
 .for ping ipv in ping IPV4 ping6 IPV6
 TARGETS +=      ping-${host}_${sec}_${mode}_${ipv}
-run-regress-ping run-regress-${host} run-regress-${sec} run-regress-${mode}\
-    run-regress-${ipv}: run-regress-ping-${host}_${sec}_${mode}_${ipv}
+run-regress-ping run-regress-${host:L} run-regress-${sec:L}\
+    run-regress-${mode:L} run-regress-${ipv:L}:\
+    run-regress-ping-${host}_${sec}_${mode}_${ipv}
 run-regress-ping-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L} | awk '/input ${sec} /{print $$1}' >pkt.in
@@ -228,8 +229,9 @@ run-regress-ping-${host}_${sec}_${mode}_${ipv}:
     ECO TUNNEL4 ECO TUNNEL6
 .for ipv in IPV4 IPV6
 TARGETS +=      udp-${host}_${sec}_${mode}_${ipv}
-run-regress-udp run-regress-${host} run-regress-${sec} run-regress-${mode}\
-    run-regress-${ipv}: run-regress-udp-${host}_${sec}_${mode}_${ipv}
+run-regress-udp run-regress-${host:L} run-regress-${sec:L}\
+    run-regress-${mode:L} run-regress-${ipv:L}:\
+    run-regress-udp-${host}_${sec}_${mode}_${ipv}
 run-regress-udp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L} | awk '/input ${sec} /{print $$1}' >pkt.in
@@ -242,8 +244,9 @@ run-regress-udp-${host}_${sec}_${mode}_${ipv}:
 	    diff pkt.out -
 
 TARGETS +=      tcp-${host}_${sec}_${mode}_${ipv}
-run-regress-tcp run-regress-${host} run-regress-${sec} run-regress-${mode}\
-    run-regress-${ipv}: run-regress-tcp-${host}_${sec}_${mode}_${ipv}
+run-regress-tcp run-regress-${host:L} run-regress-${sec:L}\
+    run-regress-${mode:L} run-regress-${ipv:L}:\
+    run-regress-tcp-${host}_${sec}_${mode}_${ipv}
 run-regress-tcp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L} | awk '/input ${sec} /{print $$1}' >pkt.in
