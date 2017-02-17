@@ -220,17 +220,26 @@ run-regress-ping-IPS_IPCOMP_TRANSP_IPV6:
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ping ipv in ping IPV4 ping6 IPV6
-TARGETS +=      ping-${host}_${sec}_${mode}_${ipv}
+.for len size in small -s56 big -s1000
+
+TARGETS +=      ping-${len}-${host}_${sec}_${mode}_${ipv}
 ping ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
-    run-regress-ping-${host}_${sec}_${mode}_${ipv}
-run-regress-ping-${host}_${sec}_${mode}_${ipv}:
+    run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}
+run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/output ${sec} /{print $$1}' >pkt.out
-	${ping} -s 1000 -n -c 1 -w 2 ${${host}_${sec}_${mode}_${ipv}}
-.if "${host}" != SRC
+	${ping} ${size} -n -c 1 -w 2 ${${host}_${sec}_${mode}_${ipv}}
+.if "${host}" == SRC || ( "${len}" == small && "${sec}" == IPCOMP )
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/input ${sec} /{print $$1}' |\
+	    diff pkt.in -
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/output ${sec} /{print $$1}' |\
+	    diff pkt.out -
+.else
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1-1}' |\
 	    diff pkt.in -
@@ -238,6 +247,8 @@ run-regress-ping-${host}_${sec}_${mode}_${ipv}:
 	    awk '/output ${sec} /{print $$1-1}' |\
 	    diff pkt.out -
 .endif
+
+.endfor
 .endfor
 .endfor
 
