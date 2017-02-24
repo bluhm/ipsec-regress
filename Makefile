@@ -146,14 +146,12 @@ addr.py: Makefile
 # load the ipsec sa and flow into the kernel of the SRC and IPS machine
 stamp-ipsec: addr.py ipsec.conf
 	@echo '\n======== $@ ========'
-	${SUDO} ipsecctl -F
 	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f -
-	cat addr.py ${.CURDIR}/ipsec.conf | \
-	    ${SUDO} ipsecctl -f -
+	${SUDO} ipsecctl -F
+	cat addr.py ${.CURDIR}/ipsec.conf | ${SUDO} ipsecctl -f -
 	ssh ${IPS_SSH} ${SUDO} ipsecctl -F
-	cat addr.py ${.CURDIR}/ipsec.conf | \
-	    ssh ${IPS_SSH} ${SUDO} ipsecctl -f - \
-	    -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
+	cat addr.py ${.CURDIR}/ipsec.conf | ssh ${IPS_SSH} ${SUDO} ipsecctl\
+	    -f - -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
 # Ping all addresses.  This ensures that the IP addresses are configured
