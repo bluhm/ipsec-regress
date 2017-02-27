@@ -564,6 +564,7 @@ check-setup-src:
 	sysctl net.inet.esp.enable | fgrep =1
 	sysctl net.inet.ah.enable | fgrep =1
 	sysctl net.inet.ipip.allow | fgrep =1
+	sysctl net.inet.ipcomp.enable | fgrep =1
 
 check-setup-ips:
 	@echo '\n======== $@ ========'
@@ -615,6 +616,7 @@ check-setup-ips:
 	ssh ${IPS_SSH} sysctl net.inet.esp.enable | fgrep =1
 	ssh ${IPS_SSH} sysctl net.inet.ah.enable | fgrep =1
 	ssh ${IPS_SSH} sysctl net.inet.ipip.allow | fgrep =1
+	ssh ${IPS_SSH} sysctl net.inet.ipcomp.enable | fgrep =1
 
 check-setup-rt:
 	@echo '\n======== $@ ========'
