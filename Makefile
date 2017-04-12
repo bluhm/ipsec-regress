@@ -196,7 +196,9 @@ run-regress-ping-${host}_${dir}_${ipv}:
 .endfor
 .endfor
 
-run-regress-ping-IPS_ESP_TRANSP_IPV6:
+run-regress-ping-IPS_ESP_TRANSP_IPV6 \
+    run-regress-ping-small-IPS_ESP_TRANSP_IPV6 \
+    run-regress-ping-big-IPS_ESP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
 	@echo 'request does not create state and echo reply does not pass pf.'
@@ -208,7 +210,9 @@ run-regress-tcp-IPS_ESP_TRANSP_IPV6:
 	@echo 'SYN does not create state and SYN+ACK does not pass pf.'
 	@echo DISABLED
 
-run-regress-ping-IPS_IPCOMP_TRANSP_IPV6:
+run-regress-ping-IPS_IPCOMP_TRANSP_IPV6 \
+    run-regress-ping-small-IPS_IPCOMP_TRANSP_IPV6 \
+    run-regress-ping-big-IPS_IPCOMP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
 	@echo 'request does not create state and echo reply does not pass pf.'
