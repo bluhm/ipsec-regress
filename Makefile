@@ -224,7 +224,7 @@ run-regress-ping-IPS_IPCOMP_TRANSP_IPV6 \
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ping ipv in ping IPV4 ping6 IPV6
-.for len size in small -s56 big -s1000
+.for len size in small -s24 big -s1000
 
 TARGETS +=      ping-${len}-${host}_${sec}_${mode}_${ipv}
 ping ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
