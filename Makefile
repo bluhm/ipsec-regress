@@ -264,13 +264,17 @@ udp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-udp-${host}_${sec}_${mode}_${ipv}
 run-regress-udp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
-	netstat -s -p ${sec:L:S/ipip/ipencap/} | awk '/input ${sec} /{print $$1}' >pkt.in
-	netstat -s -p ${sec:L:S/ipip/ipencap/} | awk '/output ${sec} /{print $$1}' >pkt.out
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/input ${sec} /{print $$1}' >pkt.in
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/output ${sec} /{print $$1}' >pkt.out
 	echo $$$$ | nc -n -u -w 1 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
-	netstat -s -p ${sec:L:S/ipip/ipencap/} | awk '/input ${sec} /{print $$1-1}' |\
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/input ${sec} /{print $$1-1}' |\
 	    diff pkt.in -
-	netstat -s -p ${sec:L:S/ipip/ipencap/} | awk '/output ${sec} /{print $$1-1}' |\
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/output ${sec} /{print $$1-1}' |\
 	    diff pkt.out -
 
 TARGETS +=      tcp-${host}_${sec}_${mode}_${ipv}
@@ -278,13 +282,17 @@ tcp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-tcp-${host}_${sec}_${mode}_${ipv}
 run-regress-tcp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
-	netstat -s -p ${sec:L:S/ipip/ipencap/} | awk '/input ${sec} /{print $$1}' >pkt.in
-	netstat -s -p ${sec:L:S/ipip/ipencap/} | awk '/output ${sec} /{print $$1}' >pkt.out
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/input ${sec} /{print $$1}' >pkt.in
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/output ${sec} /{print $$1}' >pkt.out
 	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
-	netstat -s -p ${sec:L:S/ipip/ipencap/} | awk '/input ${sec} /{print $$1-4}' |\
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/input ${sec} /{print $$1-4}' |\
 	    diff pkt.in -
-	netstat -s -p ${sec:L:S/ipip/ipencap/} | awk '/output ${sec} /{print $$1-6}' |\
+	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
+	    awk '/output ${sec} /{print $$1-6}' |\
 	    diff pkt.out -
 .endfor
 .endfor
