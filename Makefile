@@ -232,6 +232,12 @@ run-regress-ping-IPS_IPCOMP_TRANSP_IPV6 \
 	@echo 'request does not create state and echo reply does not pass pf.'
 	@echo DISABLED
 
+run-regress-ping-big-IPS_BUNDLE_TRANSP_IPV6:
+	@echo '\n======== $@ ========'
+	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
+	@echo 'request does not create state and echo reply does not pass pf.'
+	@echo DISABLED
+
 .for sec in ESP AH IPIP IPCOMP BUNDLE
 
 .for host mode in SRC TRANSP SRC TUNNEL \
