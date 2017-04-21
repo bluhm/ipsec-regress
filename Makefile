@@ -232,7 +232,7 @@ run-regress-ping-IPS_IPCOMP_TRANSP_IPV6 \
 	@echo 'request does not create state and echo reply does not pass pf.'
 	@echo DISABLED
 
-.for sec in ESP AH IPIP IPCOMP
+.for sec in ESP AH IPIP IPCOMP BUNDLE
 
 .for host mode in SRC TRANSP SRC TUNNEL \
     IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
@@ -245,11 +245,14 @@ ping ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}
 run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
+.if "${sec}" != BUNDLE
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/output ${sec} /{print $$1}' >pkt.out
+.endif
 	${ping} ${size} -n -c 1 -w 2 ${${host}_${sec}_${mode}_${ipv}}
+.if "${sec}" != BUNDLE
 .if "${host}" == SRC || ( "${len}" == small && "${sec}" == IPCOMP )
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1}' |\
@@ -265,6 +268,7 @@ run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}:
 	    awk '/output ${sec} /{print $$1-1}' |\
 	    diff pkt.out -
 .endif
+.endif
 
 .endfor
 .endfor
@@ -278,12 +282,15 @@ udp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-udp-${host}_${sec}_${mode}_${ipv}
 run-regress-udp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
+.if "${sec}" != BUNDLE
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/output ${sec} /{print $$1}' >pkt.out
+.endif
 	echo $$$$ | nc -n -u -w 1 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
+.if "${sec}" != BUNDLE
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1}' |\
@@ -299,18 +306,22 @@ run-regress-udp-${host}_${sec}_${mode}_${ipv}:
 	    awk '/output ${sec} /{print $$1-1}' |\
 	    diff pkt.out -
 .endif
+.endif
 
 TARGETS +=      tcp-${host}_${sec}_${mode}_${ipv}
 tcp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-tcp-${host}_${sec}_${mode}_${ipv}
 run-regress-tcp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
+.if "${sec}" != BUNDLE
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/output ${sec} /{print $$1}' >pkt.out
+.endif
 	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
+.if "${sec}" != BUNDLE
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/} |\
 	    awk '/input ${sec} /{print $$1}' |\
@@ -326,6 +337,8 @@ run-regress-tcp-${host}_${sec}_${mode}_${ipv}:
 	    awk '/output ${sec} /{print $$1-6}' |\
 	    diff pkt.out -
 .endif
+.endif
+
 .endfor
 .endfor
 
