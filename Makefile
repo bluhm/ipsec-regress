@@ -252,23 +252,23 @@ ping ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
 run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1}' >pkt.in
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1}' >pkt.out
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
 	${ping} ${size} -n -c 1 -w 2 ${${host}_${sec}_${mode}_${ipv}}
 .if "${host}" == SRC || ( "${len}" == small && "${sec}" == IPCOMP )
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1}' |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
 	    diff pkt.in -
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1}' |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
 	    diff pkt.out -
 .else
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1-1}' |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1-1}' |\
 	    diff pkt.in -
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1-1}' |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1-1}' |\
 	    diff pkt.out -
 .endif
 
@@ -285,24 +285,24 @@ udp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
 run-regress-udp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1}' >pkt.in
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1}' >pkt.out
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
 	echo $$$$ | nc -n -u -w 1 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1}' |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
 	    diff pkt.in -
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1}' |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
 	    diff pkt.out -
 .else
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1-1}' |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1-1}' |\
 	    diff pkt.in -
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1-1}' |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1-1}' |\
 	    diff pkt.out -
 .endif
 
@@ -312,24 +312,24 @@ tcp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
 run-regress-tcp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1}' >pkt.in
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1}' >pkt.out
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
 	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1}' |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
 	    diff pkt.in -
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1}' |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
 	    diff pkt.out -
 .else
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec} /{print $$1-4}' |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1-4}' |\
 	    diff pkt.in -
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec} /{print $$1-6}' |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1-6}' |\
 	    diff pkt.out -
 .endif
 
