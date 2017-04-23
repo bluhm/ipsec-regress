@@ -22,7 +22,7 @@
 # 8 -> f : tunnel v6 forward v6
 #
 #               1400        1300
-# +---+   0   +---+   1   +---+   2   +---+
+# +---+   03  +---+   1   +---+   2   +---+
 # |SRC| ----> |IPS| ----> |RT | ----> |ECO|
 # +---+ 458 5 +---+ cd    +---+    ef +---+
 #     out    in   out    in   out    in
@@ -45,6 +45,8 @@ PREFIX_IPV6 ?=	fdd7:e83e:66bc:1
 
 SRC_OUT_IPV4 ?=	${PREFIX_IPV4}00.17
 SRC_OUT_IPV6 ?=	${PREFIX_IPV6}00::17
+SRC_BUNDLE_IPV4 ?=	${PREFIX_IPV4}03.17
+SRC_BUNDLE_IPV6 ?=	${PREFIX_IPV6}03::17
 SRC_ESP_TRANSP_IPV4 ?=	${PREFIX_IPV4}05.17
 SRC_ESP_TRANSP_IPV6 ?=	${PREFIX_IPV6}04::17
 SRC_ESP_TUNNEL_IPV4 ?=	${PREFIX_IPV4}08.17
@@ -70,6 +72,8 @@ IPS_IN_IPV4 ?=	${PREFIX_IPV4}00.70
 IPS_IN_IPV6 ?=	${PREFIX_IPV6}00::70
 IPS_OUT_IPV4 ?=	${PREFIX_IPV4}01.70
 IPS_OUT_IPV6 ?=	${PREFIX_IPV6}01::70
+IPS_BUNDLE_IPV4 ?=	${PREFIX_IPV4}03.70
+IPS_BUNDLE_IPV6 ?=	${PREFIX_IPV6}03::70
 IPS_ESP_TRANSP_IPV4 ?=	${PREFIX_IPV4}05.70
 IPS_ESP_TRANSP_IPV6 ?=	${PREFIX_IPV6}05::70
 IPS_ESP_TUNNEL4_IPV4 ?=	${PREFIX_IPV4}12.70
@@ -169,7 +173,7 @@ depend: addr.py
 addr.py: Makefile
 	rm -f $@ $@.tmp
 .for host in SRC IPS RT ECO
-.for dir in IN OUT
+.for dir in IN OUT BUNDLE
 .for ipv in IF IPV4 IPV6
 	echo '${host}_${dir}_${ipv}="${${host}_${dir}_${ipv}}"' >>$@.tmp
 .endfor
@@ -353,9 +357,11 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
 	echo '### regress ipsec $@' >$@.tmp
-	echo '# SRC_OUT' >>$@.tmp
+.for dir in OUT BUNDLE
+	echo '# SRC_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
-	echo '${inet} alias ${SRC_OUT_${ipv}} ${masklen}' >>$@.tmp
+	echo '${inet} alias ${SRC_${dir}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
 .endfor
 .for sec in ESP AH IPIP IPCOMP BUNDLE
 	echo '## SRC_${sec}' >>$@.tmp
@@ -397,9 +403,11 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
 	echo '### regress ipsec $@' >$@.tmp
-	echo '# IPS_IN' >>$@.tmp
+.for dir in IN BUNDLE
+	echo '# IPS_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
-	echo '${inet} alias ${IPS_IN_${ipv}} ${masklen}' >>$@.tmp
+	echo '${inet} alias ${IPS_${dir}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
 .endfor
 .for sec in ESP AH IPIP IPCOMP BUNDLE
 	echo '## IPS_${sec}' >>$@.tmp
@@ -581,12 +589,13 @@ check-setup: check-setup-src check-setup-ips check-setup-rt check-setup-eco
 check-setup-src:
 	@echo '\n======== $@ ========'
 .for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
-.for host dir in SRC OUT
+.for host dir in SRC OUT SRC BUNDLE
 	${ping} -n -c 1 ${${host}_${dir}_${ipv}}  # ${host}_${dir}_${ipv}
 	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
 .endfor
 	${ping} -n -c 1 ${IPS_IN_${ipv}}  # IPS_IN_${ipv}
+	${ping} -n -c 1 ${IPS_BUNDLE_${ipv}}  # IPS_BUNDLE_${ipv}
 .for host dir in IPS OUT RT IN RT OUT ECO IN
 	route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    fgrep -q 'gateway: ${IPS_IN_${ipv}}' \
@@ -620,13 +629,14 @@ check-setup-src:
 check-setup-ips:
 	@echo '\n======== $@ ========'
 .for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
-.for host dir in IPS IN IPS OUT
+.for host dir in IPS IN IPS OUT IPS BUNDLE
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${${host}_${dir}_${ipv}} \
 	    # ${host}_${dir}_${ipv}
 	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
 	    grep -q 'flags: .*LOCAL'  # ${host}_${dir}_${ipv}
 .endfor
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${SRC_OUT_${ipv}}  # SRC_OUT_${ipv}
+	ssh ${IPS_SSH} ${ping} -n -c 1 ${SRC_BUNDLE_${ipv}}  # SRC_BUNDLE_${ipv}
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${RT_IN_${ipv}}  # RT_IN_${ipv}
 .for host dir in RT OUT ECO IN
 	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${dir}_${ipv}} |\
