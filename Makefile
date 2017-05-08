@@ -249,7 +249,6 @@ run-regress-bpf-tcp-IPS_ESP_TRANSP_IPV6 \
 	@echo DISABLED
 
 run-regress-send-ping-IPS_IPCOMP_TRANSP_IPV6 \
-    run-regress-send-ping-small-IPS_IPCOMP_TRANSP_IPV6 \
     run-regress-send-ping-big-IPS_IPCOMP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
