@@ -164,7 +164,7 @@ regress:
 	@echo
 	${SUDO} true
 	ssh -t ${IPS_SSH} ${SUDO} true
-	rm -f stamp-ipsec
+	rm -f stamp-ipsec stamp-bpf
 .endif
 
 depend: addr.py
@@ -208,37 +208,37 @@ stamp-ipsec: addr.py ipsec.conf
 .for host dir in SRC OUT IPS IN IPS OUT RT IN RT OUT ECO IN
 .for ping ipv in ping IPV4 ping6 IPV6
 TARGETS +=      ping-${host}_${dir}_${ipv}
-run-regress-ping-${host}_${dir}_${ipv}:
+run-regress-send-ping-${host}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
 	${ping} -n -c 1 -w 2 ${${host}_${dir}_${ipv}}
 .endfor
 .endfor
 
-run-regress-ping-IPS_ESP_TRANSP_IPV6 \
-    run-regress-ping-small-IPS_ESP_TRANSP_IPV6 \
-    run-regress-ping-big-IPS_ESP_TRANSP_IPV6:
+run-regress-send-ping-IPS_ESP_TRANSP_IPV6 \
+    run-regress-send-ping-small-IPS_ESP_TRANSP_IPV6 \
+    run-regress-send-ping-big-IPS_ESP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
 	@echo 'request does not create state and echo reply does not pass pf.'
 	@echo DISABLED
 
-run-regress-tcp-IPS_ESP_TRANSP_IPV6:
+run-regress-send-tcp-IPS_ESP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  TCP'
 	@echo 'SYN does not create state and SYN+ACK does not pass pf.'
 	@echo DISABLED
 
-run-regress-ping-IPS_IPCOMP_TRANSP_IPV6 \
-    run-regress-ping-small-IPS_IPCOMP_TRANSP_IPV6 \
-    run-regress-ping-big-IPS_IPCOMP_TRANSP_IPV6:
+run-regress-send-ping-IPS_IPCOMP_TRANSP_IPV6 \
+    run-regress-send-ping-small-IPS_IPCOMP_TRANSP_IPV6 \
+    run-regress-send-ping-big-IPS_IPCOMP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
 	@echo 'request does not create state and echo reply does not pass pf.'
 	@echo DISABLED
 
-run-regress-ping-small-IPS_BUNDLE_TRANSP_IPV6 \
-    run-regress-ping-big-IPS_BUNDLE_TRANSP_IPV6 \
-    run-regress-tcp-IPS_BUNDLE_TRANSP_IPV6:
+run-regress-send-ping-small-IPS_BUNDLE_TRANSP_IPV6 \
+    run-regress-send-ping-big-IPS_BUNDLE_TRANSP_IPV6 \
+    run-regress-send-tcp-IPS_BUNDLE_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
 	@echo 'request does not create state and echo reply does not pass pf.'
@@ -252,10 +252,10 @@ run-regress-ping-small-IPS_BUNDLE_TRANSP_IPV6 \
 .for ping ipv in ping IPV4 ping6 IPV6
 .for len size in small -s24 big -s1000
 
-TARGETS +=      ping-${len}-${host}_${sec}_${mode}_${ipv}
+TARGETS +=      send-ping-${len}-${host}_${sec}_${mode}_${ipv}
 ping ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
-    run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}
-run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}:
+    run-regress-send-ping-${len}-${host}_${sec}_${mode}_${ipv}
+run-regress-send-ping-${len}-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
@@ -287,8 +287,8 @@ run-regress-ping-${len}-${host}_${sec}_${mode}_${ipv}:
 .for ipv in IPV4 IPV6
 TARGETS +=      udp-${host}_${sec}_${mode}_${ipv}
 udp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
-    run-regress-udp-${host}_${sec}_${mode}_${ipv}
-run-regress-udp-${host}_${sec}_${mode}_${ipv}:
+    run-regress-send-udp-${host}_${sec}_${mode}_${ipv}
+run-regress-send-udp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
@@ -314,8 +314,8 @@ run-regress-udp-${host}_${sec}_${mode}_${ipv}:
 
 TARGETS +=      tcp-${host}_${sec}_${mode}_${ipv}
 tcp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
-    run-regress-tcp-${host}_${sec}_${mode}_${ipv}
-run-regress-tcp-${host}_${sec}_${mode}_${ipv}:
+    run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}
+run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
@@ -344,11 +344,48 @@ run-regress-tcp-${host}_${sec}_${mode}_${ipv}:
 
 .endfor
 
-REGRESS_TARGETS =	${TARGETS:S/^/run-regress-/}
+.for sec in ESP AH IPIP IPCOMP BUNDLE
+.for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 ECO TUNNEL4 ECO TUNNEL6
+.for ipv in IPV4 IPV6
 
-${REGRESS_TARGETS}: stamp-ipsec
+run-regress-bpf-tcp-${host}_${sec}_${mode}_${ipv}: stop-bpf
+	@echo '\n======== $@ ========'
+	echo SRC_${mode:C/[46]$//}_${ipv} ${host}_${sec}_${mode}_${ipv}
+	grep ' ${SRC_OUT_IPV4} > ${IPS_IN_IPV4}:\
+	    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}\.[0-9][0-9]* >\
+	    ${${host}_${sec}_${mode}_${ipv}}\.7:\
+	    '  enc0.tcpdump
 
-CLEANFILES +=		addr.py *.pyc *.log stamp-* */hostname.* *.{in,out}
+.endfor
+.endfor
+.endfor
+
+TARGETS=tcp-ECO_ESP_TUNNEL4_IPV4  # XXX
+
+DUMPCMD=	tcpdump -l -e -vvv -ni enc0 -s 2048
+
+# run tcpdump on enc device of IPS machine
+stamp-bpf:
+	@echo '\n======== $@ ========'
+	rm -f enc0.tcpdump
+	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'" || true
+	ssh ${IPS_SSH} ${SUDO} ${DUMPCMD} >enc0.tcpdump &
+	sleep 5  # XXX
+	@date >$@
+
+.PHONY: stop-bpf
+
+stop-bpf: ${TARGETS:S/^/run-regress-send-/}
+	@echo '\n======== $@ ========'
+	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'"
+	rm -f stamp-bpf
+
+REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
+			${TARGETS:S/^/run-regress-bpf-/}
+
+${REGRESS_TARGETS}: stamp-ipsec stamp-bpf
+
+CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcdump
 
 .PHONY: create-setup
 
