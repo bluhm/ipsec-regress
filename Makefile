@@ -252,7 +252,7 @@ run-regress-send-ping-small-IPS_BUNDLE_TRANSP_IPV6 \
 .for ping ipv in ping IPV4 ping6 IPV6
 .for len size in small -s24 big -s1000
 
-TARGETS +=      send-ping-${len}-${host}_${sec}_${mode}_${ipv}
+TARGETS +=      ping-${len}-${host}_${sec}_${mode}_${ipv}
 ping ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-ping-${len}-${host}_${sec}_${mode}_${ipv}
 run-regress-send-ping-${len}-${host}_${sec}_${mode}_${ipv}:
@@ -346,32 +346,61 @@ run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 
 REGEX_ESP=	(authentic,confidential): SPI 0x[0-9a-f]*:
 REGEX_AH=	(authentic): SPI 0x[0-9a-f]*:
-REGEX_TRANSP=	*
-REGEX_TUNNEL4=	${SRC_OUT_IPV4} > ${IPS_IN_IPV4}:
-REGEX_TUNNEL6=	${SRC_OUT_IPV6} > ${IPS_IN_IPV6}:
+REGEX_IPCOMP=	(unprotected): SPI 0x[0-9a-f]*:
 
-.for sec in ESP AH IPIP IPCOMP BUNDLE
+REGEX_REQ_TRANSP=	*
+REGEX_REQ_TUNNEL4=	${SRC_OUT_IPV4} > ${IPS_IN_IPV4}:
+REGEX_REQ_TUNNEL6=	${SRC_OUT_IPV6} > ${IPS_IN_IPV6}:
+
+REGEX_RPL_TRANSP=	*
+REGEX_RPL_TUNNEL4=	${IPS_IN_IPV4} > ${SRC_OUT_IPV4}:
+REGEX_RPL_TUNNEL6=	${IPS_IN_IPV6} > ${SRC_OUT_IPV6}:
+
+REGEX_REQ_PING=	icmp: echo request
+REGEX_REQ_UDP=	.* udp
+REGEX_REQ_TCP=	S
+
+REGEX_RPL_PING=	icmp: echo reply
+REGEX_RPL_UDP=	.* udp
+REGEX_RPL_TCP=	S .* ack
+
 .for host in IPS ECO
+.for sec in ESP AH IPCOMP BUNDLE
 .for mode in TRANSP TUNNEL4 TUNNEL6
 .for ipv in IPV4 IPV6
 
-run-regress-bpf-udp-${host}_${sec}_${mode}_${ipv}:
-	@echo '\n======== $@ ========'
-	grep -q '\
-	    ${REGEX_${sec}}\
-	    ${REGEX_${mode}}\
-	    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}\.[0-9][0-9]* >\
-	    ${${host}_${sec}_${mode}_${ipv}}\.7:\
-	    .* udp ' enc0.tcpdump
+REGEX_REQ_${host}_${sec}_${mode}_${ipv}_PING=\
+    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}} >\
+    ${${host}_${sec}_${mode}_${ipv}}:
+REGEX_REQ_${host}_${sec}_${mode}_${ipv}_UDP=\
+    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}\.[0-9][0-9]* >\
+    ${${host}_${sec}_${mode}_${ipv}}\.7:
+REGEX_REQ_${host}_${sec}_${mode}_${ipv}_TCP=\
+    ${REGEX_REQ_${host}_${sec}_${mode}_${ipv}_UDP}
 
-run-regress-bpf-tcp-${host}_${sec}_${mode}_${ipv}:
+REGEX_RPL_${host}_${sec}_${mode}_${ipv}_PING=\
+    ${${host}_${sec}_${mode}_${ipv}} >\
+    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}:
+REGEX_RPL_${host}_${sec}_${mode}_${ipv}_UDP=\
+    ${${host}_${sec}_${mode}_${ipv}}\.7 >\
+    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}\.[0-9][0-9]*:
+REGEX_RPL_${host}_${sec}_${mode}_${ipv}_TCP=\
+    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_UDP}
+
+.for proto in PING UDP TCP
+run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	grep -q '\
 	    ${REGEX_${sec}}\
-	    ${REGEX_${mode}}\
-	    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}\.[0-9][0-9]* >\
-	    ${${host}_${sec}_${mode}_${ipv}}\.7:\
-	    S ' enc0.tcpdump
+	    ${REGEX_REQ_${mode}}\
+	    ${REGEX_REQ_${host}_${sec}_${mode}_${ipv}_${proto}}\
+	    ${REGEX_REQ_${proto}} ' enc0.tcpdump
+	grep -q '\
+	    ${REGEX_${sec}}\
+	    ${REGEX_RPL_${mode}}\
+	    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_${proto}}\
+	    ${REGEX_RPL_${proto}} ' enc0.tcpdump
+.endfor
 
 .endfor
 .endfor
