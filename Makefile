@@ -170,7 +170,7 @@ regress:
 depend: addr.py
 
 # Create python include file containing the addresses.
-addr.py: Makefile
+addr.py:
 	rm -f $@ $@.tmp
 .for host in SRC IPS RT ECO
 .for dir in IN OUT BUNDLE
@@ -344,23 +344,39 @@ run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 
 .endfor
 
+REGEX_ESP=	(authentic,confidential): SPI 0x[0-9a-f]*:
+REGEX_AH=	(authentic): SPI 0x[0-9a-f]*:
+REGEX_TRANSP=	*
+REGEX_TUNNEL4=	${SRC_OUT_IPV4} > ${IPS_IN_IPV4}:
+REGEX_TUNNEL6=	${SRC_OUT_IPV6} > ${IPS_IN_IPV6}:
+
 .for sec in ESP AH IPIP IPCOMP BUNDLE
-.for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 ECO TUNNEL4 ECO TUNNEL6
+.for host in IPS ECO
+.for mode in TRANSP TUNNEL4 TUNNEL6
 .for ipv in IPV4 IPV6
 
-run-regress-bpf-tcp-${host}_${sec}_${mode}_${ipv}: stop-bpf
+run-regress-bpf-udp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
-	echo SRC_${mode:C/[46]$//}_${ipv} ${host}_${sec}_${mode}_${ipv}
-	grep ' ${SRC_OUT_IPV4} > ${IPS_IN_IPV4}:\
+	grep -q '\
+	    ${REGEX_${sec}}\
+	    ${REGEX_${mode}}\
 	    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}\.[0-9][0-9]* >\
 	    ${${host}_${sec}_${mode}_${ipv}}\.7:\
-	    '  enc0.tcpdump
+	    .* udp ' enc0.tcpdump
+
+run-regress-bpf-tcp-${host}_${sec}_${mode}_${ipv}:
+	@echo '\n======== $@ ========'
+	grep -q '\
+	    ${REGEX_${sec}}\
+	    ${REGEX_${mode}}\
+	    ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}\.[0-9][0-9]* >\
+	    ${${host}_${sec}_${mode}_${ipv}}\.7:\
+	    S ' enc0.tcpdump
 
 .endfor
 .endfor
 .endfor
-
-TARGETS=tcp-ECO_ESP_TUNNEL4_IPV4  # XXX
+.endfor
 
 DUMPCMD=	tcpdump -l -e -vvv -ni enc0 -s 2048
 
@@ -378,7 +394,6 @@ stamp-bpf:
 stop-bpf: ${TARGETS:S/^/run-regress-send-/}
 	@echo '\n======== $@ ========'
 	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'"
-	rm -f stamp-bpf
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
 			${TARGETS:S/^/run-regress-bpf-/}
