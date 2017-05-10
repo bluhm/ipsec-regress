@@ -231,6 +231,8 @@ run-regress-send-ping-${host}_${dir}_${ipv}:
 .endfor
 .endfor
 
+# disable some tests, they do not pass yet due to kernel bugs
+
 run-regress-bpf-ping-IPS_ESP_TRANSP_IPV6 \
     run-regress-send-ping-small-IPS_ESP_TRANSP_IPV6 \
     run-regress-send-ping-big-IPS_ESP_TRANSP_IPV6:
@@ -261,6 +263,8 @@ run-regress-send-ping-small-IPS_BUNDLE_TRANSP_IPV6 \
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  Echo'
 	@echo 'request does not create state and echo reply does not pass pf.'
 	@echo DISABLED
+
+# send IPsec packets from SRC to IPS and expect response
 
 .for sec in ESP AH IPIP IPCOMP BUNDLE
 
@@ -362,6 +366,8 @@ run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 
 .endfor
 
+# Check bpf has dumped all IPsec packets to enc0 on IPS
+
 REGEX_ESP=	(authentic,confidential): SPI 0x[0-9a-f]*:
 REGEX_AH=	(authentic): SPI 0x[0-9a-f]*:
 REGEX_IPCOMP=	(unprotected): SPI 0x[0-9a-f]*:
@@ -408,7 +414,7 @@ REGEX_RPL_${host}_${sec}_${mode}_${ipv}_TCP=\
 .for proto in PING UDP TCP
 run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
-.if "${sec}" == IPCOMP || "${sec}" == PING
+.if "${sec}" == IPCOMP && "${sec}" != PING
 	@echo packet too small to be compressed
 .else
 	grep -q '\
@@ -435,6 +441,8 @@ ${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf
 ${REGRESS_TARGETS:Mrun-regress-bpf-*}: stamp-stop
 
 CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcdump
+
+# create hostname.if files, copy them to the machines and install addresses
 
 .PHONY: create-setup
 
@@ -672,6 +680,7 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 .PHONY: check-setup
 
 # Check wether the address, route and remote setup is correct
+
 check-setup: check-setup-src check-setup-ips check-setup-rt check-setup-eco
 
 check-setup-src:
