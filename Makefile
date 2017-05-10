@@ -164,13 +164,13 @@ regress:
 	@echo
 	${SUDO} true
 	ssh -t ${IPS_SSH} ${SUDO} true
-	rm -f stamp-ipsec stamp-bpf
+	rm -f stamp-ipsec stamp-bpf stamp-stop
 .endif
 
 depend: addr.py
 
 # Create python include file containing the addresses.
-addr.py:
+addr.py: Makefile
 	rm -f $@ $@.tmp
 .for host in SRC IPS RT ECO
 .for dir in IN OUT BUNDLE
@@ -214,7 +214,7 @@ run-regress-send-ping-${host}_${dir}_${ipv}:
 .endfor
 .endfor
 
-run-regress-send-ping-IPS_ESP_TRANSP_IPV6 \
+run-regress-bpf-ping-IPS_ESP_TRANSP_IPV6 \
     run-regress-send-ping-small-IPS_ESP_TRANSP_IPV6 \
     run-regress-send-ping-big-IPS_ESP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
@@ -222,7 +222,8 @@ run-regress-send-ping-IPS_ESP_TRANSP_IPV6 \
 	@echo 'request does not create state and echo reply does not pass pf.'
 	@echo DISABLED
 
-run-regress-send-tcp-IPS_ESP_TRANSP_IPV6:
+run-regress-bpf-tcp-IPS_ESP_TRANSP_IPV6 \
+    run-regress-send-tcp-IPS_ESP_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo 'IPv6 IPsec input does not filter enc0 interface with pf.  TCP'
 	@echo 'SYN does not create state and SYN+ACK does not pass pf.'
@@ -294,7 +295,7 @@ run-regress-send-udp-${host}_${sec}_${mode}_${ipv}:
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
-	echo $$$$ | nc -n -u -w 1 ${${host}_${sec}_${mode}_${ipv}} 7 |\
+	echo $$$$ | nc -n -u -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
@@ -390,6 +391,9 @@ REGEX_RPL_${host}_${sec}_${mode}_${ipv}_TCP=\
 .for proto in PING UDP TCP
 run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
+.if "${sec}" == IPCOMP || "${sec}" == PING
+	@echo packet too small to be compressed
+.else
 	grep -q '\
 	    ${REGEX_${sec}}\
 	    ${REGEX_REQ_${mode}}\
@@ -400,6 +404,7 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
 	    ${REGEX_RPL_${mode}}\
 	    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_${proto}}\
 	    ${REGEX_RPL_${proto}} ' enc0.tcpdump
+.endif
 .endfor
 
 .endfor
@@ -407,27 +412,27 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
 .endfor
 .endfor
 
-DUMPCMD=	tcpdump -l -e -vvv -ni enc0 -s 2048
+DUMPCMD=	tcpdump -l -e -vvv -s 2048 -ni
 
 # run tcpdump on enc device of IPS machine
-stamp-bpf:
+stamp-bpf: Makefile
 	@echo '\n======== $@ ========'
 	rm -f enc0.tcpdump
-	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'" || true
-	ssh ${IPS_SSH} ${SUDO} ${DUMPCMD} >enc0.tcpdump &
+	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}' enc0" || true
+	ssh ${IPS_SSH} ${SUDO} ${DUMPCMD} enc0 >enc0.tcpdump &
 	sleep 5  # XXX
+	rm -f stamp-stop
 	@date >$@
 
-.PHONY: stop-bpf
-
-stop-bpf: ${TARGETS:S/^/run-regress-send-/}
+stamp-stop:
 	@echo '\n======== $@ ========'
 	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'"
+	@date >$@
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
-			${TARGETS:S/^/run-regress-bpf-/}
-
-${REGRESS_TARGETS}: stamp-ipsec stamp-bpf
+			${TARGETS:N*IPIP*:N*BUNDLE*:S/^/run-regress-bpf-/}
+${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf
+${REGRESS_TARGETS:Mrun-regress-bpf-*}: stamp-stop
 
 CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcdump
 
