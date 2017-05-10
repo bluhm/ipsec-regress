@@ -156,7 +156,7 @@ regress:
 	@echo this tests needs three remote machines to operate on
 	@echo IPS_SSH RT_SSH ECO_SSH are empty
 	@echo fill out these variables for additional tests, then
-	@echo check wether your test machines are set up properly
+	@echo check whether your test machines are set up properly
 	@echo SKIPPED
 
 .elif make (regress) || make (all)
@@ -678,7 +678,7 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 
 .PHONY: check-setup
 
-# Check wether the address, route and remote setup is correct
+# Check whether the address, route and remote setup is correct
 
 check-setup: check-setup-src check-setup-ips check-setup-rt check-setup-eco
 
