@@ -202,6 +202,23 @@ stamp-ipsec: addr.py ipsec.conf
 	    -f - -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
+DUMPCMD=	tcpdump -l -e -vvv -s 2048 -ni
+
+# run tcpdump on enc device of IPS machine
+stamp-bpf: Makefile
+	@echo '\n======== $@ ========'
+	rm -f enc0.tcpdump
+	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}' enc0" || true
+	ssh ${IPS_SSH} ${SUDO} ${DUMPCMD} enc0 >enc0.tcpdump &
+	sleep 5  # XXX
+	rm -f stamp-stop
+	@date >$@
+
+stamp-stop:
+	@echo '\n======== $@ ========'
+	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'"
+	@date >$@
+
 # Ping all addresses.  This ensures that the IP addresses are configured
 # and all routing table are set up to allow bidirectional packet flow.
 
@@ -411,23 +428,6 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
 .endfor
 .endfor
 .endfor
-
-DUMPCMD=	tcpdump -l -e -vvv -s 2048 -ni
-
-# run tcpdump on enc device of IPS machine
-stamp-bpf: Makefile
-	@echo '\n======== $@ ========'
-	rm -f enc0.tcpdump
-	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}' enc0" || true
-	ssh ${IPS_SSH} ${SUDO} ${DUMPCMD} enc0 >enc0.tcpdump &
-	sleep 5  # XXX
-	rm -f stamp-stop
-	@date >$@
-
-stamp-stop:
-	@echo '\n======== $@ ========'
-	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'"
-	@date >$@
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
 			${TARGETS:N*IPIP*:N*BUNDLE*:S/^/run-regress-bpf-/}
