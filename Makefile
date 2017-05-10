@@ -412,7 +412,7 @@ REGEX_RPL_${host}_${sec}_${mode}_${ipv}_TCP=\
     ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_UDP}
 
 .for proto in PING UDP TCP
-run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
+run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
 .if "${sec}" == IPCOMP && "${sec}" != PING
 	@echo packet too small to be compressed
@@ -436,9 +436,8 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
 .endfor
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
-    ${TARGETS:N*IPIP*:N*BUNDLE*:N*-small-*:S/^/run-regress-bpf-/:S/-big-/-/}
+    ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/^/run-regress-bpf-/:S/-big-/-/}
 ${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf
-${REGRESS_TARGETS:Mrun-regress-bpf-*}: stamp-stop
 
 CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcdump
 
