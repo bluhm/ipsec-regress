@@ -316,7 +316,7 @@ run-regress-send-udp-${host}_${sec}_${mode}_${ipv}:
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
-	echo $$$$ | nc -n -u -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
+	echo $$$$ | nc -n -u -W 1 -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
@@ -380,11 +380,11 @@ REGEX_RPL_TRANSP=	*
 REGEX_RPL_TUNNEL4=	${IPS_IN_IPV4} > ${SRC_OUT_IPV4}:
 REGEX_RPL_TUNNEL6=	${IPS_IN_IPV6} > ${SRC_OUT_IPV6}:
 
-REGEX_REQ_PING=	icmp: echo request
+REGEX_REQ_PING=	icmp6*: echo request
 REGEX_REQ_UDP=	.* udp
 REGEX_REQ_TCP=	S
 
-REGEX_RPL_PING=	icmp: echo reply
+REGEX_RPL_PING=	icmp6*: echo reply
 REGEX_RPL_UDP=	.* udp
 REGEX_RPL_TCP=	S .* ack
 
@@ -436,7 +436,7 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}:
 .endfor
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
-			${TARGETS:N*IPIP*:N*BUNDLE*:S/^/run-regress-bpf-/}
+    ${TARGETS:N*IPIP*:N*BUNDLE*:N*-small-*:S/^/run-regress-bpf-/:S/-big-/-/}
 ${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf
 ${REGRESS_TARGETS:Mrun-regress-bpf-*}: stamp-stop
 
