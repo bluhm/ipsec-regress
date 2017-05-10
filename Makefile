@@ -316,7 +316,7 @@ run-regress-send-udp-${host}_${sec}_${mode}_${ipv}:
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
-	echo $$$$ | nc -n -u -W 1 -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
+	echo $$$$ | nc -n -u -w 1 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
