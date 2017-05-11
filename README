@@ -12,6 +12,9 @@ are tested with all combinations of encapsulation mode, and both
 ip versions, and the ip protocols ping, UDP, TCP.  Small and big
 ping packets are used, as IPComp skips small packets.
 
+The netstat -s counters are checked to ensure that encrypted packets
+are processed in both ways.
+
 The BPF output of the enc0 and pflog0 interface is checked.  This
 ensures that all IPsec packets are passed to bpf and pf.
 
