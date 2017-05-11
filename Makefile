@@ -760,6 +760,8 @@ check-setup-ips:
 	ssh ${IPS_SSH} sysctl net.inet.ah.enable | fgrep =1
 	ssh ${IPS_SSH} sysctl net.inet.ipip.allow | fgrep =1
 	ssh ${IPS_SSH} sysctl net.inet.ipcomp.enable | fgrep =1
+	ssh ${PF_SSH} ${SUDO} pfctl -sr | grep '^anchor "regress" all$$'
+	ssh ${PF_SSH} ${SUDO} pfctl -si | grep '^Status: Enabled '
 
 check-setup-rt:
 	@echo '\n======== $@ ========'
