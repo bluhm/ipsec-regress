@@ -164,13 +164,14 @@ regress:
 	@echo
 	${SUDO} true
 	ssh -t ${IPS_SSH} ${SUDO} true
-	rm -f stamp-ipsec stamp-bpf stamp-stop
+	rm -f stamp-ipsec stamp-bpf stamp-pflog stamp-stop
 .endif
 
 depend: addr.py
 
 # Create python include file containing the addresses.
 addr.py: Makefile
+	@echo '\n======== $@ ========'
 	rm -f $@ $@.tmp
 .for host in SRC IPS RT ECO
 .for dir in IN OUT BUNDLE
@@ -202,14 +203,32 @@ stamp-ipsec: addr.py ipsec.conf
 	    -f - -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
+# load a pf log enc0 pass any rule into the kernel of the IPS machine
+stamp-pfctl: addr.py pf.conf
+	@echo '\n======== $@ ========'
+	cat addr.py ${.CURDIR}/pf.conf | pfctl -n -f -
+	cat addr.py ${.CURDIR}/pf.conf | \
+	    ssh ${IPS_SSH} ${SUDO} pfctl -a regress -f -
+	@date >$@
+
 DUMPCMD=	tcpdump -l -e -vvv -s 2048 -ni
 
 # run tcpdump on enc device of IPS machine
 stamp-bpf: Makefile
 	@echo '\n======== $@ ========'
 	rm -f enc0.tcpdump
-	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}' enc0" || true
+	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD} enc0'" || true
 	ssh ${IPS_SSH} ${SUDO} ${DUMPCMD} enc0 >enc0.tcpdump &
+	sleep 5  # XXX
+	rm -f stamp-stop
+	@date >$@
+
+# run tcpdump on pflog device of IPS machine
+stamp-pflog: stamp-pfctl
+	@echo '\n======== $@ ========'
+	rm -f pflog0.tcpdump
+	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD} pflog0'" || true
+	ssh ${IPS_SSH} ${SUDO} ${DUMPCMD} pflog0 >pflog0.tcpdump &
 	sleep 5  # XXX
 	rm -f stamp-stop
 	@date >$@
@@ -404,7 +423,7 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
     ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/^/run-regress-bpf-/:S/-big-/-/}
-${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf
+${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf stamp-pflog
 
 CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcdump
 
