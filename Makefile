@@ -412,9 +412,6 @@ REGEX_RPL_${host}_${sec}_${mode}_${ipv}_TCP=\
 
 run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
-.if "${sec}" == IPCOMP && "${proto}" != PING
-	@echo packet too small to be compressed
-.else
 	grep -q '\
 	    ${REGEX_${sec}}\
 	    ${REGEX_REQ_${mode}}\
@@ -425,7 +422,6 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	    ${REGEX_RPL_${mode}}\
 	    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_${proto}}\
 	    ${REGEX_RPL_${proto}} ' enc0.tcpdump
-.endif
 
 run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
@@ -447,7 +443,7 @@ run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 .endfor
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
-    ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-bpf-/} \
+    ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:Nudp-*_IPCOMP_*:Ntcp-*_IPCOMP_*:N*-small-*:S/-big-/-/:S/^/run-regress-bpf-/} \
     ${TARGETS:N*_IPIP_*:N*_IPCOMP_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-pflog-/}
 ${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf stamp-pflog
 
