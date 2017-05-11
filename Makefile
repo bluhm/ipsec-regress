@@ -164,7 +164,7 @@ regress:
 	@echo
 	${SUDO} true
 	ssh -t ${IPS_SSH} ${SUDO} true
-	rm -f stamp-ipsec stamp-bpf stamp-pflog stamp-stop
+	rm -f stamp-ipsec stamp-pfctl stamp-bpf stamp-pflog stamp-stop
 .endif
 
 depend: addr.py
@@ -375,7 +375,7 @@ REGEX_RPL_UDP=	.* udp
 REGEX_RPL_TCP=	S .* ack
 
 .for host in IPS ECO
-.for sec in ESP AH IPCOMP BUNDLE
+.for sec in ESP AH IPIP IPCOMP BUNDLE
 .for mode in TRANSP TUNNEL4 TUNNEL6
 .for ipv in IPV4 IPV6
 
@@ -398,6 +398,7 @@ REGEX_RPL_${host}_${sec}_${mode}_${ipv}_TCP=\
     ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_UDP}
 
 .for proto in PING UDP TCP
+
 run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
 .if "${sec}" == IPCOMP && "${proto}" != PING
@@ -414,15 +415,29 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_${proto}}\
 	    ${REGEX_RPL_${proto}} ' enc0.tcpdump
 .endif
-.endfor
 
+run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
+	@echo '\n======== $@ ========'
+	grep -q '\
+	    rule .*regress.0/(match) .*\
+	    pass in on enc0: .*\
+	    ${REGEX_REQ_${host}_${sec}_${mode}_${ipv}_${proto}}\
+	    ${REGEX_REQ_${proto}} ' pflog0.tcpdump
+	grep -q '\
+	    rule .*/(match) .*\
+	    pass out on enc0: .*\
+	    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_${proto}}\
+	    ${REGEX_RPL_${proto}} ' pflog0.tcpdump
+
+.endfor
 .endfor
 .endfor
 .endfor
 .endfor
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
-    ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/^/run-regress-bpf-/:S/-big-/-/}
+    ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-bpf-/} \
+    ${TARGETS:N*_IPIP_*:N*_IPCOMP_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-pflog-/}
 ${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf stamp-pflog
 
 CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcdump
