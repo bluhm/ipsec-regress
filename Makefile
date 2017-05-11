@@ -381,7 +381,7 @@ REGEX_RPL_${host}_${sec}_${mode}_${ipv}_TCP=\
 .for proto in PING UDP TCP
 run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
-.if "${sec}" == IPCOMP && "${sec}" != PING
+.if "${sec}" == IPCOMP && "${proto}" != PING
 	@echo packet too small to be compressed
 .else
 	grep -q '\
