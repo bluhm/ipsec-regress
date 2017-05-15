@@ -235,6 +235,7 @@ stamp-pflog: stamp-pfctl
 
 stamp-stop:
 	@echo '\n======== $@ ========'
+	sleep 5  # XXX
 	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'"
 	@date >$@
 
