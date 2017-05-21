@@ -490,13 +490,13 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 .endfor
 .for host in IPS ECO
 .for mode in TUNNEL4 TUNNEL6
-	echo '# ${host}_${sec}_${mode}/pfxlen reject\
+	echo '# ${host}_${sec}_${mode}/pfxlen\
 	    ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet}\
 	    ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
 	echo '!route add -${inet} ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}\
-	    -reject ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
+	    ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
 .endfor
 .endfor
 .endfor
@@ -524,12 +524,12 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	echo '!route add -inet6 ${SRC_${sec}_TRANSP_IPV6}/64 ${SRC_OUT_IPV6}'\
 	    >>$@.tmp
 .for mode in TUNNEL
-	echo '# SRC_${sec}_${mode}/pfxlen reject ${IPS_IN_${ipv}}' >>$@.tmp
+	echo '# SRC_${sec}_${mode}/pfxlen ${IPS_IN_${ipv}}' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet}\
 	    ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
 	echo '!route add -${inet} ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}\
-	    -reject ${IPS_IN_${ipv}}' >>$@.tmp
+	    ${IPS_IN_${ipv}}' >>$@.tmp
 .endfor
 .endfor
 .endfor
@@ -715,7 +715,7 @@ check-setup-src:
 .endfor
 .for host mode in IPS TUNNEL4 IPS TUNNEL6 ECO TUNNEL4 ECO TUNNEL6
 	route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
-	    grep -q 'flags: .*REJECT'  # ${host}_${sec}_${mode}_${ipv}
+	    grep -q 'flags: .*STATIC'  # ${host}_${sec}_${mode}_${ipv}
 .endfor
 .endfor
 .endfor
@@ -762,7 +762,7 @@ check-setup-ips:
 .endfor
 .for host mode in SRC TUNNEL
 	ssh ${IPS_SSH} route -n get -${inet} ${${host}_${sec}_${mode}_${ipv}} |\
-	    grep -q 'flags: .*REJECT'  # ${host}_${sec}_${mode}_${ipv}
+	    grep -q 'flags: .*STATIC'  # ${host}_${sec}_${mode}_${ipv}
 .endfor
 .for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
 	ssh ${IPS_SSH} netstat -nav -f ${inet} -p udp |\
