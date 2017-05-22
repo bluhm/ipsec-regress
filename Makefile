@@ -457,6 +457,8 @@ run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 
 run-regress-rand-tcp-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
+	openssl rand 1500 |\
+	    nc -n -N -w 1 ${${host}_${sec}_${mode}_${ipv}} 7 | true
 	openssl rand 200000 |\
 	    nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    wc -c | grep '200000$$'
