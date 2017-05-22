@@ -453,6 +453,13 @@ run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	    ${REGEX_RPL_${proto}} ' pflog0.tcpdump
 
 .endfor
+
+run-regress-rand-tcp-${host}_${sec}_${mode}_${ipv}: stamp-stop
+	@echo '\n======== $@ ========'
+	openssl rand 200000 |\
+	    nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
+	    wc -c | grep '200000$$'
+
 .endfor
 .endfor
 .endfor
@@ -460,7 +467,8 @@ run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
     ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:Nudp-*_IPCOMP_*:Ntcp-*_IPCOMP_*:N*-small-*:S/-big-/-/:S/^/run-regress-bpf-/} \
-    ${TARGETS:N*_IPIP_*:N*_IPCOMP_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-pflog-/}
+    ${TARGETS:N*_IPIP_*:N*_IPCOMP_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-pflog-/} \
+    ${TARGETS:N*_IN_*:N*_OUT_*:N*-SRC_*:Mtcp-*:S/^/run-regress-rand-/}
 ${REGRESS_TARGETS:Mrun-regress-send-*}: \
     stamp-ipsec stamp-bpf stamp-pflog stamp-drop
 
