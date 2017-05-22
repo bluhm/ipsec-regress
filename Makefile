@@ -239,17 +239,6 @@ stamp-stop:
 	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'"
 	@date >$@
 
-# Disable tests that do not pass.
-
-run-regress-pflog-ping-IPS_AH_TRANSP_IPV6 \
-    run-regress-pflog-udp-IPS_AH_TRANSP_IPV6 \
-    run-regress-pflog-tcp-IPS_AH_TRANSP_IPV6:
-	@echo '\n======== $@ ========'
-	@echo IPv6 AH packets are treated as their payload protocol by pf.
-	@echo So they match the floating state on the physical interface
-	@echo and are not logged by the enc0 pf rule.
-	@echo DISABLED
-
 # Ping all addresses.  This ensures that the IP addresses are configured
 # and all routing table are set up to allow bidirectional packet flow.
 
