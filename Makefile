@@ -243,9 +243,10 @@ stamp-stop:
 # the checks that count the IPsec packets with netstat -ss.
 stamp-drop:
 	@echo '\n======== $@ ========'
-	netstat -nv -p tcp -f inet6 |\
+	netstat -nv -p tcp |\
 	    perl -ne '\
-		/ ${PREFIX_IPV6}.* ${PREFIX_IPV6}/ or next;\
+		/ ${PREFIX_IPV6}.* ${PREFIX_IPV6}/ ||\
+		/ ${PREFIX_IPV4}.* ${PREFIX_IPV4}/ or next;\
 		my ($$laddr,$$faddr) = (split)[3,4];\
 		my ($$lip,$$lport) = $$laddr =~ /(.*)\.(\d+)/;\
 		my ($$fip,$$fport) = $$faddr =~ /(.*)\.(\d+)/;\
