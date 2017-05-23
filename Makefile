@@ -164,7 +164,7 @@ regress:
 	@echo
 	${SUDO} true
 	ssh -t ${IPS_SSH} ${SUDO} true
-	rm -f stamp-ipsec stamp-pfctl stamp-bpf stamp-pflog stamp-stop
+	rm -f stamp-*
 .endif
 
 depend: addr.py
@@ -237,6 +237,20 @@ stamp-stop:
 	@echo '\n======== $@ ========'
 	sleep 5  # XXX
 	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD}'"
+	@date >$@
+
+# Old TCP connections send packets from time to time.  These confuse
+# the checks that count the IPsec packets with netstat -ss.
+stamp-drop:
+	@echo '\n======== $@ ========'
+	netstat -nv -p tcp -f inet6 |\
+	    perl -ne '\
+		/ ${PREFIX_IPV6}.* ${PREFIX_IPV6}/ or next;\
+		my ($$laddr,$$faddr) = (split)[3,4];\
+		my ($$lip,$$lport) = $$laddr =~ /(.*)\.(\d+)/;\
+		my ($$fip,$$fport) = $$faddr =~ /(.*)\.(\d+)/;\
+		print join(" ",$$lip,$$lport,$$fip,$$fport),"\n"' |\
+	    xargs -r -L1 ${SUDO} tcpdrop
 	@date >$@
 
 # Disable tests that do not pass.
@@ -460,7 +474,8 @@ REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
     ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:Nudp-*_IPCOMP_*:Ntcp-*_IPCOMP_*:N*-small-*:S/-big-/-/:S/^/run-regress-bpf-/} \
     ${TARGETS:N*_IPIP_*:N*_IPCOMP_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-pflog-/} \
     ${TARGETS:N*_IN_*:N*_OUT_*:N*-SRC_*:Mtcp-*:S/^/run-regress-rand-/}
-${REGRESS_TARGETS:Mrun-regress-send-*}: stamp-ipsec stamp-bpf stamp-pflog
+${REGRESS_TARGETS:Mrun-regress-send-*}: \
+    stamp-ipsec stamp-bpf stamp-pflog stamp-drop
 
 CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcdump
 
