@@ -455,10 +455,14 @@ run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 
 .endfor
 
+# Before sending large data streams allow to learn the path MTU.
+# We use mutiple tcp streams to avoid TCP timeouts.
 run-regress-rand-tcp-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
+.for i in 1 2 3 4
 	openssl rand 1500 |\
 	    nc -n -N -w 1 ${${host}_${sec}_${mode}_${ipv}} 7 | true
+.endfor
 	openssl rand 200000 |\
 	    nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    wc -c | grep '200000$$'
