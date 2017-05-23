@@ -214,7 +214,7 @@ stamp-pfctl: addr.py pf.conf
 DUMPCMD=	tcpdump -l -e -vvv -s 2048 -ni
 
 # run tcpdump on enc device of IPS machine
-stamp-bpf: Makefile
+stamp-bpf: Makefile stamp-drop
 	@echo '\n======== $@ ========'
 	rm -f enc0.tcpdump
 	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD} enc0'" || true
@@ -224,7 +224,7 @@ stamp-bpf: Makefile
 	@date >$@
 
 # run tcpdump on pflog device of IPS machine
-stamp-pflog: stamp-pfctl
+stamp-pflog: stamp-pfctl stamp-drop
 	@echo '\n======== $@ ========'
 	rm -f pflog0.tcpdump
 	-ssh ${IPS_SSH} ${SUDO} pkill -f "'${DUMPCMD} pflog0'" || true
