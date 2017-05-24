@@ -443,12 +443,12 @@ run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
 	grep -q '\
 	    rule .*regress.0/(match) .*\
-	    pass in on enc0: .*\
+	    pass in on enc0:.*\
 	    ${REGEX_REQ_${host}_${sec}_${mode}_${ipv}_${proto}}\
 	    ${REGEX_REQ_${proto}} ' pflog0.tcpdump
 	grep -q '\
 	    rule .*/(match) .*\
-	    pass out on enc0: .*\
+	    pass out on enc0:.*\
 	    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_${proto}}\
 	    ${REGEX_RPL_${proto}} ' pflog0.tcpdump
 
