@@ -464,7 +464,7 @@ REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
 ${REGRESS_TARGETS:Mrun-regress-send-*}: \
     stamp-ipsec stamp-bpf stamp-pflog stamp-drop
 
-CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcdump
+CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcpdump
 
 # create hostname.if files, copy them to the machines and install addresses
 
