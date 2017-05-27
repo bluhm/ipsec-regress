@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.14 2017/05/15 20:09:11 bluhm Exp $
+#	$OpenBSD: Makefile,v 1.15 2017/05/27 10:58:53 bluhm Exp $
 
 # This test needs a manual setup of four machines, the make
 # target create-setup can be used distribute the configuration.
