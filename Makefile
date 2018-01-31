@@ -149,6 +149,9 @@ RT_IN_IF ?=	vio1
 RT_OUT_IF ?=	vio2
 ECO_IN_IF ?=	vio1
 
+SRC_OUT_MAC ?=	fe:e1:ba:d0:d5:6d
+IPS_IN_MAC ?=	70:5f:ca:21:8d:80
+
 .MAIN: all
 
 .if empty (IPS_SSH) || empty (RT_SSH) || empty (ECO_SSH)
@@ -171,6 +174,8 @@ regress:
 addr.py: Makefile
 	@echo '\n======== $@ ========'
 	rm -f $@ $@.tmp
+	echo 'SRC_OUT_MAC="${SRC_OUT_MAC}"' >>$@.tmp
+	echo 'IPS_IN_MAC="${IPS_IN_MAC}"' >>$@.tmp
 .for host in SRC IPS RT ECO
 .for dir in IN OUT BUNDLE
 .for ipv in IF IPV4 IPV6
@@ -464,6 +469,25 @@ REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
     ${TARGETS:N*_IPIP_*:N*_IPCOMP_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-pflog-/}
 ${REGRESS_TARGETS:Mrun-regress-send-*}: \
     stamp-ipsec stamp-bpf stamp-pflog stamp-drop
+
+# Set variables so that make runs with and without obj directory.
+# Only do that if necessary to keep visible output short.
+.if ${.CURDIR} == ${.OBJDIR}
+PYTHON =	python2.7 ./
+.else
+PYTHON =	PYTHONPATH=${.OBJDIR} python2.7 ${.CURDIR}/
+.endif
+
+.for ipv in IPV6
+.for sec in AH
+.for host mode in IPS TRANSP IPS TUNNEL6 ECO TUNNEL6
+run-regress-scapy-ah-ext-hbh-icmp-${host}_${mode}: stamp-ipsec stamp-pfctl
+	@echo '\n======== $@ ========'
+	@echo send ping6 AH packet with hop-by-hop extension header
+	${SUDO} ${PYTHON}ah_ext_hbh_icmp6.py ${${host}_${sec}_${mode}_${ipv}}
+.endfor
+.endfor
+.endfor
 
 CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcpdump
 
