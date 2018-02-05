@@ -491,7 +491,7 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
 	echo '### regress ipsec $@' >$@.tmp
-.for dir in OUT BUNDLE
+.for dir in OUT BUNDLE NAT
 	echo '# SRC_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${SRC_${dir}_${ipv}} ${masklen}' >>$@.tmp
@@ -531,13 +531,34 @@ etc/hostname.${SRC_OUT_IF}: Makefile
 .endfor
 .endfor
 .endfor
+.for sec in ESP
+	echo '## SRC_${sec}_NAT' >>$@.tmp
+.for mode in NATTUNNEL
+	echo '# SRC_${sec}_${mode}' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${SRC_${sec}_${mode}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.endfor
+.for host in IPS ECO
+.for mode in NATTUNNEL4
+	echo '# ${host}_${sec}_${mode}/pfxlen\
+	    ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet}\
+	    ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${${host}_${sec}_${mode}_${ipv}}/${pfxlen}\
+	    ${SRC_${sec}_TUNNEL_${ipv}}' >>$@.tmp
+.endfor
+.endfor
+.endfor
+.endfor
 	mv $@.tmp $@
 
 ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
 	echo '### regress ipsec $@' >$@.tmp
-.for dir in IN BUNDLE
+.for dir in IN BUNDLE NAT
 	echo '# IPS_${dir}' >>$@.tmp
 .for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
 	echo '${inet} alias ${IPS_${dir}_${ipv}} ${masklen}' >>$@.tmp
@@ -554,6 +575,18 @@ ${IPS_SSH}/hostname.${IPS_IN_IF}: Makefile
 	echo '!route add -inet6 ${SRC_${sec}_TRANSP_IPV6}/64 ${SRC_OUT_IPV6}'\
 	    >>$@.tmp
 .for mode in TUNNEL
+	echo '# SRC_${sec}_${mode}/pfxlen ${IPS_IN_${ipv}}' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet}\
+	    ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}\
+	    ${IPS_IN_${ipv}}' >>$@.tmp
+.endfor
+.endfor
+.endfor
+.for sec in ESP
+	echo '## IPS_${sec}_NAT' >>$@.tmp
+.for mode in NATTUNNEL
 	echo '# SRC_${sec}_${mode}/pfxlen ${IPS_IN_${ipv}}' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet}\
@@ -599,6 +632,24 @@ ${IPS_SSH}/hostname.${IPS_OUT_IF}: Makefile
 .endfor
 .endfor
 .endfor
+.for sec in ESP
+	echo '## IPS_${sec}_NAT' >>$@.tmp
+.for mode in NATTUNNEL4
+	echo '# IPS_${sec}_${mode}' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${IPS_${sec}_${mode}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.endfor
+.for mode in NATTUNNEL4
+	echo '# ECO_${sec}_${mode}/pfxlen RT_IN' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet}\
+	    ${ECO_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${ECO_${sec}_${mode}_${ipv}}/${pfxlen}\
+	    ${RT_IN_${ipv}}' >>$@.tmp
+.endfor
+.endfor
+.endfor
 	mv $@.tmp $@
 
 ${RT_SSH}/hostname.${RT_IN_IF}: Makefile
@@ -629,6 +680,18 @@ ${RT_SSH}/hostname.${RT_IN_IF}: Makefile
 .endfor
 .endfor
 .endfor
+.for sec in ESP
+	echo '## IPS_${sec}_NAT' >>$@.tmp
+.for mode in NATTUNNEL
+	echo '# SRC_${mode}/pfxlen IPS_OUT' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet} ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}'\
+	    >>$@.tmp
+	echo '!route add -${inet} ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}\
+	    ${IPS_OUT_${ipv}}' >>$@.tmp
+.endfor
+.endfor
+.endfor
 	mv $@.tmp $@
 
 ${RT_SSH}/hostname.${RT_OUT_IF}: Makefile
@@ -643,6 +706,18 @@ ${RT_SSH}/hostname.${RT_OUT_IF}: Makefile
 .for sec in ESP AH IPIP IPCOMP BUNDLE
 	echo '## IPS_${sec}' >>$@.tmp
 .for mode in TUNNEL4 TUNNEL6
+	echo '# ECO_${sec}_${mode}/pfxlen ECO_IN' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet}\
+	    ${ECO_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${ECO_${sec}_${mode}_${ipv}}/${pfxlen}\
+	    ${ECO_IN_${ipv}}' >>$@.tmp
+.endfor
+.endfor
+.endfor
+.for sec in ESP
+	echo '## IPS_${sec}_NAT' >>$@.tmp
+.for mode in NATTUNNEL4
 	echo '# ECO_${sec}_${mode}/pfxlen ECO_IN' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet}\
@@ -681,6 +756,24 @@ ${ECO_SSH}/hostname.${ECO_IN_IF}: Makefile
 .endfor
 .endfor
 .for mode in TUNNEL
+	echo '# SRC_${sec}_${mode}/pfxlen RT_OUT' >>$@.tmp
+.for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
+	echo '!route -q delete -${inet}\
+	    ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}' >>$@.tmp
+	echo '!route add -${inet} ${SRC_${sec}_${mode}_${ipv}}/${pfxlen}\
+	    ${RT_OUT_${ipv}}' >>$@.tmp
+.endfor
+.endfor
+.endfor
+.for sec in ESP
+	echo '## IPS_${sec}_NAT' >>$@.tmp
+.for mode in NATTUNNEL4
+	echo '# ECO_${sec}_${mode}' >>$@.tmp
+.for inet ipv masklen in inet IPV4 255.255.255.0 inet6 IPV6 64
+	echo '${inet} alias ${ECO_${sec}_${mode}_${ipv}} ${masklen}' >>$@.tmp
+.endfor
+.endfor
+.for mode in NATTUNNEL
 	echo '# SRC_${sec}_${mode}/pfxlen RT_OUT' >>$@.tmp
 .for inet ipv pfxlen in inet IPV4 24 inet6 IPV6 64
 	echo '!route -q delete -${inet}\
