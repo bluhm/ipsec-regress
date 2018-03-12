@@ -185,7 +185,7 @@ addr.py: Makefile
 	@echo '\n======== $@ ========'
 	rm -f $@ $@.tmp
 .for host in SRC IPS RT ECO
-.for dir in IN OUT BUNDLE
+.for dir in IN OUT BUNDLE NAT
 .for ipv in IF IPV4 IPV6
 	echo '${host}_${dir}_${ipv}="${${host}_${dir}_${ipv}}"' >>$@.tmp
 .endfor
@@ -201,17 +201,30 @@ addr.py: Makefile
 .endfor
 .endfor
 .endfor
+.for sec in ESP
+.for host mode in SRC NATTUNNEL \
+    IPS NATTUNNEL4 \
+    ECO NATTUNNEL4
+.for ipv in IPV4 IPV6
+	echo '${host}_${sec}_${mode}_${ipv}="${${host}_${sec}_${mode}_${ipv}}"'\
+	    >>$@.tmp
+.endfor
+.endfor
+.endfor
 	mv $@.tmp $@
 
 # load the ipsec sa and flow into the kernel of the SRC and IPS machine
 stamp-ipsec: addr.py ipsec.conf
 	@echo '\n======== $@ ========'
-	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f -
+	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f - \
+	    -D NAT='${IPS_ESP_NATTUNNEL4_IPV4}/24'
 	${SUDO} ipsecctl -F
-	cat addr.py ${.CURDIR}/ipsec.conf | ${SUDO} ipsecctl -f -
+	cat addr.py ${.CURDIR}/ipsec.conf | ${SUDO} ipsecctl -f - \
+	    -D NAT='${IPS_ESP_TUNNEL4_IPV4}/24'
 	ssh ${IPS_SSH} ${SUDO} ipsecctl -F
 	cat addr.py ${.CURDIR}/ipsec.conf | ssh ${IPS_SSH} ${SUDO} ipsecctl\
-	    -f - -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
+	    -f - -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local \
+	    -D NAT='"${IPS_IN_IPV4} (${IPS_ESP_NATTUNNEL4_IPV4}/24)"'
 	@date >$@
 
 # load a pf log enc0 pass any rule into the kernel of the IPS machine
