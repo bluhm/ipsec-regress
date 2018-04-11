@@ -359,6 +359,7 @@ run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
 	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
+	sleep .1  # wait for IP stack to send TCP FIN packet
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
