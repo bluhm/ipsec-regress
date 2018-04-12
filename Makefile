@@ -353,28 +353,8 @@ tcp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}
 run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
-	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
-	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
 	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
-	sleep .1  # wait for IP stack to send TCP FIN packet
-.if "${sec}" == IPCOMP
-	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
-	    diff pkt.in -
-	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
-	    diff pkt.out -
-.else
-	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1-4}' |\
-	    diff pkt.in -
-	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
-	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1-6}' |\
-	    diff pkt.out -
-.endif
 
 .endfor
 .endfor
