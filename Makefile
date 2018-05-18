@@ -259,9 +259,11 @@ stamp-drop:
 run-regress-pflog-ping-IPS_AH_TRANSP_IPV4 \
     run-regress-pflog-udp-IPS_AH_TRANSP_IPV4 \
     run-regress-pflog-tcp-IPS_AH_TRANSP_IPV4 \
+    run-regress-pflog-nonxt-IPS_AH_TRANSP_IPV4 \
     run-regress-pflog-ping-IPS_AH_TRANSP_IPV6 \
     run-regress-pflog-udp-IPS_AH_TRANSP_IPV6 \
-    run-regress-pflog-tcp-IPS_AH_TRANSP_IPV6:
+    run-regress-pflog-tcp-IPS_AH_TRANSP_IPV6 \
+    run-regress-pflog-nonxt-IPS_AH_TRANSP_IPV6:
 	@echo '\n======== $@ ========'
 	@echo IPv6 AH packets are treated as their payload protocol by pf.
 	@echo So they match the floating state on the physical interface
@@ -394,9 +396,9 @@ run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-sendrecv
 
 # Check bpf has dumped all IPsec packets to enc0 on IPS
 
-REGEX_ESP=	(authentic,confidential): SPI 0x[0-9a-f]*:
-REGEX_AH=	(authentic): SPI 0x[0-9a-f]*:
-REGEX_IPCOMP=	(unprotected): SPI 0x[0-9a-f]*:
+REGEX_ESP=	\(authentic,confidential\): SPI 0x[0-9a-f]*:
+REGEX_AH=	\(authentic\): SPI 0x[0-9a-f]*:
+REGEX_IPCOMP=	\(unprotected\): SPI 0x[0-9a-f]*:
 
 REGEX_REQ_TRANSP=	*
 REGEX_REQ_TUNNEL4=	${SRC_OUT_IPV4} > ${IPS_IN_IPV4}:
@@ -406,13 +408,15 @@ REGEX_RPL_TRANSP=	*
 REGEX_RPL_TUNNEL4=	${IPS_IN_IPV4} > ${SRC_OUT_IPV4}:
 REGEX_RPL_TUNNEL6=	${IPS_IN_IPV6} > ${SRC_OUT_IPV6}:
 
-REGEX_REQ_PING=	icmp6*: echo request
+REGEX_REQ_PING=	icmp6?: echo request
 REGEX_REQ_UDP=	.* udp
 REGEX_REQ_TCP=	S
+REGEX_REQ_NONXT=(ip-proto-59|no next header)
 
 REGEX_RPL_PING=	icmp6*: echo reply
 REGEX_RPL_UDP=	.* udp
 REGEX_RPL_TCP=	S .* ack
+REGEX_RPL_NONXT=(ip-proto-59|no next header)
 
 .for host in IPS ECO
 .for sec in ESP AH IPIP IPCOMP BUNDLE
@@ -427,6 +431,8 @@ REGEX_REQ_${host}_${sec}_${mode}_${ipv}_UDP=\
     ${${host}_${sec}_${mode}_${ipv}}\.7:
 REGEX_REQ_${host}_${sec}_${mode}_${ipv}_TCP=\
     ${REGEX_REQ_${host}_${sec}_${mode}_${ipv}_UDP}
+REGEX_REQ_${host}_${sec}_${mode}_${ipv}_NONXT=\
+    ${REGEX_REQ_${host}_${sec}_${mode}_${ipv}_PING}
 
 REGEX_RPL_${host}_${sec}_${mode}_${ipv}_PING=\
     ${${host}_${sec}_${mode}_${ipv}} >\
@@ -436,17 +442,19 @@ REGEX_RPL_${host}_${sec}_${mode}_${ipv}_UDP=\
     ${SRC_${sec}_${mode:C/[46]$//}_${ipv}}\.[0-9][0-9]*:
 REGEX_RPL_${host}_${sec}_${mode}_${ipv}_TCP=\
     ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_UDP}
+REGEX_RPL_${host}_${sec}_${mode}_${ipv}_NONXT=\
+    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_PING}
 
-.for proto in PING UDP TCP
+.for proto in PING UDP TCP NONXT
 
 run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
-	grep -q '\
+	egrep -q '\
 	    ${REGEX_${sec}}\
 	    ${REGEX_REQ_${mode}}\
 	    ${REGEX_REQ_${host}_${sec}_${mode}_${ipv}_${proto}}\
 	    ${REGEX_REQ_${proto}} ' enc0.tcpdump
-	grep -q '\
+	egrep -q '\
 	    ${REGEX_${sec}}\
 	    ${REGEX_RPL_${mode}}\
 	    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_${proto}}\
@@ -454,13 +462,13 @@ run-regress-bpf-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 
 run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 	@echo '\n======== $@ ========'
-	grep -q '\
-	    rule .*regress.0/(match) .*\
+	egrep -q '\
+	    rule .*regress.0/\(match\) .*\
 	    pass in on enc0:.*\
 	    ${REGEX_REQ_${host}_${sec}_${mode}_${ipv}_${proto}}\
 	    ${REGEX_REQ_${proto}} ' pflog0.tcpdump
-	grep -q '\
-	    rule .*/(match) .*\
+	egrep -q '\
+	    rule .*/\(match\) .*\
 	    pass out on enc0:.*\
 	    ${REGEX_RPL_${host}_${sec}_${mode}_${ipv}_${proto}}\
 	    ${REGEX_RPL_${proto}} ' pflog0.tcpdump
@@ -472,7 +480,7 @@ run-regress-pflog-${proto:L}-${host}_${sec}_${mode}_${ipv}: stamp-stop
 .endfor
 
 REGRESS_TARGETS =	${TARGETS:S/^/run-regress-send-/} \
-    ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:Nudp-*_IPCOMP_*:Ntcp-*_IPCOMP_*:N*-small-*:S/-big-/-/:S/^/run-regress-bpf-/} \
+    ${TARGETS:N*_IPIP_*:N*_BUNDLE_*:N*_IN_*:N*_OUT_*:N*-SRC_*:Nudp-*_IPCOMP_*:Ntcp-*_IPCOMP_*:N*-small-*:Nnonxt-*_IPCOMP_*:S/-big-/-/:S/^/run-regress-bpf-/} \
     ${TARGETS:N*_IPIP_*:N*_IPCOMP_*:N*_IN_*:N*_OUT_*:N*-SRC_*:N*-small-*:S/-big-/-/:S/^/run-regress-pflog-/}
 ${REGRESS_TARGETS:Mrun-regress-send-*}: \
     stamp-ipsec stamp-bpf stamp-pflog stamp-drop
