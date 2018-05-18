@@ -149,6 +149,8 @@ RT_IN_IF ?=	vio1
 RT_OUT_IF ?=	vio2
 ECO_IN_IF ?=	vio1
 
+PROGS =		nonxt-send
+
 .MAIN: all
 
 .if empty (IPS_SSH) || empty (RT_SSH) || empty (ECO_SSH)
@@ -321,6 +323,7 @@ run-regress-send-ping-${len}-${host}_${sec}_${mode}_${ipv}:
 .for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6 \
     ECO TUNNEL4 ECO TUNNEL6
 .for ipv in IPV4 IPV6
+
 TARGETS +=      udp-${host}_${sec}_${mode}_${ipv}
 udp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-udp-${host}_${sec}_${mode}_${ipv}
@@ -355,6 +358,17 @@ run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 	@echo '\n======== $@ ========'
 	echo $$$$ | nc -n -N -w 3 ${${host}_${sec}_${mode}_${ipv}} 7 |\
 	    fgrep $$$$
+
+TARGETS +=      nonxt-${host}_${sec}_${mode}_${ipv}
+nonxt ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
+    run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}
+run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-send
+	@echo '\n======== $@ ========'
+	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
+	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
+	${SUDO} ./nonxt-send ${${host}_${sec}_${mode}_${ipv}}
 
 .endfor
 .endfor
