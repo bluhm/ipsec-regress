@@ -30,7 +30,7 @@
 void __dead
 usage(void)
 {
-	fprintf(stderr, "usage: nonxt-send [srcaddr] dstaddr\n");
+	fprintf(stderr, "usage: nonxt-send [localaddr] remoteaddr\n");
 	exit(1);
 }
 
@@ -40,7 +40,7 @@ main(int argc, char *argv[])
 	struct addrinfo hints, *res, *res0;
 	struct timeval to;
 	struct sockaddr_storage ss;
-	const char *cause = NULL, *src, *dst;
+	const char *cause = NULL, *local, *remote;
 	socklen_t slen;
 	int error;
 	int save_errno;
@@ -49,12 +49,12 @@ main(int argc, char *argv[])
 
 	switch (argc) {
 	case 2:
-		src = NULL;
-		dst = argv[1];
+		local = NULL;
+		remote = argv[1];
 		break;
 	case 3:
-		src = argv[1]; 
-		dst = argv[2];
+		local = argv[1]; 
+		remote = argv[2];
 		break;
 	default:
 		usage();
@@ -64,9 +64,9 @@ main(int argc, char *argv[])
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_RAW;
 	hints.ai_protocol = IPPROTO_NONE;
-	error = getaddrinfo(dst, NULL, &hints, &res0);
+	error = getaddrinfo(remote, NULL, &hints, &res0);
 	if (error)
-		errx(1, "getaddrinfo dst: %s", gai_strerror(error));
+		errx(1, "getaddrinfo remote: %s", gai_strerror(error));
 
 	s = -1;
 	for (res = res0; res; res = res->ai_next) {
@@ -88,16 +88,16 @@ main(int argc, char *argv[])
 	if (res == NULL)
 		err(1, "%s", cause);
 
-	if (src != NULL) {
+	if (local != NULL) {
 		memset(&hints, 0, sizeof(hints));
 		hints.ai_family = res->ai_family;
 		hints.ai_socktype = SOCK_RAW;
 		hints.ai_protocol = IPPROTO_NONE;
 		hints.ai_flags = AI_PASSIVE;
 		freeaddrinfo(res0);
-		error = getaddrinfo(src, NULL, &hints, &res0);
+		error = getaddrinfo(local, NULL, &hints, &res0);
 		if (error)
-			errx(1, "getaddrinfo src: %s", gai_strerror(error));
+			errx(1, "getaddrinfo local: %s", gai_strerror(error));
 
 		for (res = res0; res; res = res->ai_next) {
 			if (bind(s, res->ai_addr, res->ai_addrlen) == -1)
