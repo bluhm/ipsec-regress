@@ -149,7 +149,7 @@ RT_IN_IF ?=	vio1
 RT_OUT_IF ?=	vio2
 ECO_IN_IF ?=	vio1
 
-PROGS =		nonxt-send
+PROGS =		nonxt-sendrecv nonxt-reflect
 
 .MAIN: all
 
