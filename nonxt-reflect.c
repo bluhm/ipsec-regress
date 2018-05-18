@@ -88,6 +88,8 @@ main(int argc, char *argv[])
 		err(1, "%s", cause);
 	freeaddrinfo(res0);
 
+	daemon(0, 0);
+
 	slen = sizeof(ss);
 	if (recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&ss, &slen)
 	    == -1)

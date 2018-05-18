@@ -368,7 +368,9 @@ run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-send
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
-	${SUDO} ./nonxt-send ${${host}_${sec}_${mode}_${ipv}}
+	ssh ${${host}_SSH} ${SUDO}\
+	    ./nonxt-reflect ${${host}_${sec}_${mode}_${ipv}}
+	${SUDO} ./nonxt-sendrecv ${${host}_${sec}_${mode}_${ipv}}
 
 .endfor
 .endfor
