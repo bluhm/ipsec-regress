@@ -32,7 +32,8 @@ void __dead usage(void);
 void
 usage(void)
 {
-	fprintf(stderr, "usage: nonxt-send [localaddr] remoteaddr\n");
+	fprintf(stderr, "usage: nonxt-sendrecv [localaddr] remoteaddr\n"
+	    "Send empty protocol 59 packet and wait for answer.\n");
 	exit(1);
 }
 
@@ -60,6 +61,7 @@ main(int argc, char *argv[])
 		usage();
 	}
 
+	/* Create socket and connect it to remote address. */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_RAW;
@@ -67,7 +69,6 @@ main(int argc, char *argv[])
 	error = getaddrinfo(remote, NULL, &hints, &res0);
 	if (error)
 		errx(1, "getaddrinfo remote: %s", gai_strerror(error));
-
 	for (res = res0; res; res = res->ai_next) {
 		s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		if (s == -1) {
@@ -86,6 +87,7 @@ main(int argc, char *argv[])
 	if (res == NULL)
 		err(1, "%s", cause);
 
+	/* Optionally bind the socket to local address. */
 	if (local != NULL) {
 		memset(&hints, 0, sizeof(hints));
 		hints.ai_family = res->ai_family;
@@ -96,7 +98,6 @@ main(int argc, char *argv[])
 		error = getaddrinfo(local, NULL, &hints, &res0);
 		if (error)
 			errx(1, "getaddrinfo local: %s", gai_strerror(error));
-
 		for (res = res0; res; res = res->ai_next) {
 			if (bind(s, res->ai_addr, res->ai_addrlen) == -1)
 				continue;
@@ -107,8 +108,10 @@ main(int argc, char *argv[])
 	}
 	freeaddrinfo(res0);
 
+	/* Send a protocol 59 packet. */
 	if (send(s, buf, 0, 0) == -1)
 		err(1, "send");
+	/* Wait for up to 3 seconds to receive a reply packet. */
 	to.tv_sec = 3;
 	to.tv_usec = 0;
 	if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &to, sizeof(to)) == -1)

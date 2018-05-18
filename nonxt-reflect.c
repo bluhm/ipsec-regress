@@ -32,7 +32,9 @@ void __dead usage(void);
 void
 usage(void)
 {
-	fprintf(stderr, "usage: nonxt-reflect [localaddr]\n");
+	fprintf(stderr, "usage: nonxt-reflect [localaddr]\n"
+	    "Wait for protocol 59 packet in background and send answer.\n");
+	
 	exit(1);
 }
 
@@ -59,6 +61,7 @@ main(int argc, char *argv[])
 		usage();
 	}
 
+	/* Create socket and bind it to local address. */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_RAW;
@@ -67,8 +70,6 @@ main(int argc, char *argv[])
 	error = getaddrinfo(local, NULL, &hints, &res0);
 	if (error)
 		errx(1, "getaddrinfo local: %s", gai_strerror(error));
-
-	s = -1;
 	for (res = res0; res; res = res->ai_next) {
 		s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		if (s == -1) {
@@ -88,12 +89,15 @@ main(int argc, char *argv[])
 		err(1, "%s", cause);
 	freeaddrinfo(res0);
 
+	/* Scoket is ready to receive, test may proceed. */
 	daemon(0, 0);
 
+	/* Receive a protocol 59 packet. */
 	slen = sizeof(ss);
 	if (recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&ss, &slen)
 	    == -1)
 		err(1, "recv");
+	/* Send back a reply packet. */
 	if (sendto(s, buf, 0, 0, (struct sockaddr *)&ss, slen) == -1)
 		err(1, "send");
 
