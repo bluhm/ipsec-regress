@@ -68,7 +68,6 @@ main(int argc, char *argv[])
 	if (error)
 		errx(1, "getaddrinfo remote: %s", gai_strerror(error));
 
-	s = -1;
 	for (res = res0; res; res = res->ai_next) {
 		s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		if (s == -1) {
@@ -80,7 +79,6 @@ main(int argc, char *argv[])
 			save_errno = errno;
 			close(s);
 			errno = save_errno;
-			s = -1;
 			continue;
 		}
 		break;
