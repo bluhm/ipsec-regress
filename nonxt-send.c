@@ -27,7 +27,9 @@
 #include <string.h>
 #include <unistd.h>
 
-void __dead
+void __dead usage(void);
+
+void
 usage(void)
 {
 	fprintf(stderr, "usage: nonxt-send [localaddr] remoteaddr\n");
@@ -39,12 +41,10 @@ main(int argc, char *argv[])
 {
 	struct addrinfo hints, *res, *res0;
 	struct timeval to;
-	struct sockaddr_storage ss;
 	const char *cause = NULL, *local, *remote;
-	socklen_t slen;
 	int error;
 	int save_errno;
-	int s, r, u;
+	int s;
 	char buf[1024];
 
 	switch (argc) {
@@ -111,7 +111,7 @@ main(int argc, char *argv[])
 		err(1, "send");
 	to.tv_sec = 3;
 	to.tv_usec = 0;
-	if (setsockopt(r, SOL_SOCKET, SO_RCVTIMEO, &to, sizeof(to)) == -1)
+	if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &to, sizeof(to)) == -1)
 		err(1, "setsockopt");
 	if (recv(s, buf, sizeof(buf), 0) == -1)
 		err(1, "recv");
