@@ -362,7 +362,7 @@ run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 TARGETS +=      nonxt-${host}_${sec}_${mode}_${ipv}
 nonxt ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}
-run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-send
+run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-sendrecv
 	@echo '\n======== $@ ========'
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
@@ -371,6 +371,21 @@ run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-send
 	ssh ${${host}_SSH} ${SUDO}\
 	    ./nonxt-reflect ${${host}_${sec}_${mode}_${ipv}}
 	${SUDO} ./nonxt-sendrecv ${${host}_${sec}_${mode}_${ipv}}
+.if "${sec}" == IPCOMP
+	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
+	    diff pkt.in -
+	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' |\
+	    diff pkt.out -
+.else
+	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
+	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1-1}' |\
+	    diff pkt.in -
+	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
+	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1-1}' |\
+	    diff pkt.out -
+.endif
 
 .endfor
 .endfor
