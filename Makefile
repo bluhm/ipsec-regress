@@ -139,7 +139,7 @@ ECO_BUNDLE_TUNNEL6_IPV6 ?=	${PREFIX_IPV6}8f::72
 # ssh to log in.
 #
 # IPS and ECO need inetd echo service on TRANSP and TUNNEL addresses.
-# Run make create-setup to copy hostname.if files to the machines
+# Run make create-setup to copy hostname.if files to the machines.
 # Run make check-setup to see if you got the setup correct.
 
 SRC_OUT_IF ?=	tap4
@@ -192,7 +192,7 @@ addr.py: Makefile
 .endfor
 	mv $@.tmp $@
 
-# load the ipsec sa and flow into the kernel of the SRC and IPS machine
+# Load the ipsec sa and flow into the kernel of the SRC and IPS machine.
 stamp-ipsec: addr.py ipsec.conf
 	@echo '\n======== $@ ========'
 	cat addr.py ${.CURDIR}/ipsec.conf | ipsecctl -n -f -
@@ -203,7 +203,7 @@ stamp-ipsec: addr.py ipsec.conf
 	    -f - -D FROM=to -D TO=from -D LOCAL=peer -D PEER=local
 	@date >$@
 
-# load a pf log enc0 pass any rule into the kernel of the IPS machine
+# Load a pf log enc0 pass any rule into the kernel of the IPS machine.
 stamp-pfctl: addr.py pf.conf
 	@echo '\n======== $@ ========'
 	cat addr.py ${.CURDIR}/pf.conf | pfctl -n -f -
@@ -213,7 +213,7 @@ stamp-pfctl: addr.py pf.conf
 
 DUMPCMD=	tcpdump -l -e -vvv -s 2048 -ni
 
-# run tcpdump on enc device of IPS machine
+# Run tcpdump on enc device of IPS machine.
 stamp-bpf: Makefile stamp-drop
 	@echo '\n======== $@ ========'
 	rm -f enc0.tcpdump
@@ -223,7 +223,7 @@ stamp-bpf: Makefile stamp-drop
 	rm -f stamp-stop
 	@date >$@
 
-# run tcpdump on pflog device of IPS machine
+# Run tcpdump on pflog device of IPS machine.
 stamp-pflog: stamp-pfctl stamp-drop
 	@echo '\n======== $@ ========'
 	rm -f pflog0.tcpdump
@@ -282,7 +282,7 @@ run-regress-send-ping-${host}_${dir}_${ipv}:
 .endfor
 .endfor
 
-# send IPsec packets from SRC to IPS and expect response
+# Send IPsec packets from SRC to IPS and expect response.
 
 .for sec in ESP AH IPIP IPCOMP BUNDLE
 
@@ -399,7 +399,7 @@ run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-sendrecv
 
 .endfor
 
-# Check bpf has dumped all IPsec packets to enc0 on IPS
+# Check bpf has dumped all IPsec packets to enc0 on IPS.
 
 REGEX_ESP=	\(authentic,confidential\): SPI 0x[0-9a-f]*:
 REGEX_AH=	\(authentic\): SPI 0x[0-9a-f]*:
@@ -492,11 +492,13 @@ ${REGRESS_TARGETS:Mrun-regress-send-*}: \
 
 CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcpdump
 
-# create hostname.if files, copy them to the machines and install addresses
+# Run make create-setup to configure remote machines for test.
 
 .PHONY: create-setup
 
 create-setup: stamp-hostname
+
+# Create hostname.if files, copy them to the machines and install addresses.
 
 etc/hostname.${SRC_OUT_IF}: Makefile
 	@echo '\n======== $@ ========'
@@ -727,9 +729,10 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 .endfor
 	date >$@
 
-.PHONY: check-setup
 
-# Check whether the address, route and remote setup is correct
+# Check whether the address, route and remote setup is correct.
+
+.PHONY: check-setup
 
 check-setup: check-setup-src check-setup-ips check-setup-rt check-setup-eco
 
