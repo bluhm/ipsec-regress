@@ -275,7 +275,7 @@ run-regress-pflog-ping-IPS_AH_TRANSP_IPV4 \
 
 .for host dir in SRC OUT IPS IN IPS OUT RT IN RT OUT ECO IN
 .for ping ipv in ping IPV4 ping6 IPV6
-TARGETS +=      ping-${host}_${dir}_${ipv}
+TARGETS +=	ping-${host}_${dir}_${ipv}
 run-regress-send-ping-${host}_${dir}_${ipv}:
 	@echo '\n======== $@ ========'
 	${ping} -n -c 1 -w 2 ${${host}_${dir}_${ipv}}
@@ -292,7 +292,7 @@ run-regress-send-ping-${host}_${dir}_${ipv}:
 .for ping ipv in ping IPV4 ping6 IPV6
 .for len size in small -s24 big -s1000
 
-TARGETS +=      ping-${len}-${host}_${sec}_${mode}_${ipv}
+TARGETS +=	ping-${len}-${host}_${sec}_${mode}_${ipv}
 ping ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-ping-${len}-${host}_${sec}_${mode}_${ipv}
 run-regress-send-ping-${len}-${host}_${sec}_${mode}_${ipv}:
@@ -326,7 +326,7 @@ run-regress-send-ping-${len}-${host}_${sec}_${mode}_${ipv}:
     ECO TUNNEL4 ECO TUNNEL6
 .for ipv in IPV4 IPV6
 
-TARGETS +=      udp-${host}_${sec}_${mode}_${ipv}
+TARGETS +=	udp-${host}_${sec}_${mode}_${ipv}
 udp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-udp-${host}_${sec}_${mode}_${ipv}
 run-regress-send-udp-${host}_${sec}_${mode}_${ipv}:
@@ -353,7 +353,7 @@ run-regress-send-udp-${host}_${sec}_${mode}_${ipv}:
 	    diff pkt.out -
 .endif
 
-TARGETS +=      tcp-${host}_${sec}_${mode}_${ipv}
+TARGETS +=	tcp-${host}_${sec}_${mode}_${ipv}
 tcp ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}
 run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
@@ -366,7 +366,7 @@ run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 
 # Deactivate for now until the raw IP reflector can be build and
 # started reliably on remote machine.  Manually run make nonxt.
-# XXX TARGETS +=      nonxt-${host}_${sec}_${mode}_${ipv}
+# XXX TARGETS +=	nonxt-${host}_${sec}_${mode}_${ipv}
 nonxt ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}
 run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-sendrecv
@@ -732,7 +732,6 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 # Create inetd.conf files, copy them to the machines and start inetd.
 
 .for host in IPS ECO
-
 ${${host}_SSH}/inetd.conf: Makefile
 	@echo '\n======== $@ ========'
 	mkdir -p ${@:H}
@@ -751,7 +750,6 @@ ${${host}_SSH}/inetd.conf: Makefile
 .endfor
 .endfor
 	mv $@.tmp $@
-
 .endfor
 
 # Check whether the address, route and remote setup is correct.
