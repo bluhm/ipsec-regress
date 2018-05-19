@@ -737,20 +737,31 @@ ${${host}_SSH}/inetd.conf: Makefile
 	mkdir -p ${@:H}
 	rm -f $@ $@.tmp
 	echo '### regress ipsec $@' >$@.tmp
-	echo stream tcp nowait root internal >>$@.tmp
-	echo stream tcp6 nowait root internal >>$@.tmp
+	echo echo stream tcp nowait root internal >>$@.tmp
+	echo echo stream tcp6 nowait root internal >>$@.tmp
 .for sec in ESP AH IPIP IPCOMP BUNDLE
 .for mode in TRANSP TUNNEL4 TUNNEL6
 .if ! empty(${host}_${sec}_${mode}_IPV4)
-	echo '${${host}_${sec}_${mode}_IPV4}:echo\t\t'\
+	echo '${${host}_${sec}_${mode}_IPV4}:echo'\
 	    dgram udp wait root internal >>$@.tmp
-	echo '[${${host}_${sec}_${mode}_IPV6}]:echo\t'\
-	    dgram udp wait root internal >>$@.tmp
+	echo '[${${host}_${sec}_${mode}_IPV6}]:echo'\
+	    dgram udp6 wait root internal >>$@.tmp
 .endif
 .endfor
 .endfor
 	mv $@.tmp $@
 .endfor
+
+stamp-inetd: ${IPS_SSH}/inetd.conf ${ECO_SSH}/inetd.conf
+	@echo '\n======== $@ ========'
+.for host in IPS ECO
+	ssh root@${${host}_SSH} "umask 022;\
+	    { sed '/^### regress/,\$$d' /etc/inetd.conf && cat; }\
+	    >/etc/inetd.conf.tmp" <${${host}_SSH}/inetd.conf
+	ssh root@${${host}_SSH} "mv /etc/inetd.conf.tmp /etc/inetd.conf &&\
+	    rcctl enable inetd && rcctl restart inetd"
+.endfor
+	date >$@
 
 # Check whether the address, route and remote setup is correct.
 
