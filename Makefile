@@ -729,6 +729,30 @@ stamp-hostname: etc/hostname.${SRC_OUT_IF} \
 .endfor
 	date >$@
 
+# Create inetd.conf files, copy them to the machines and start inetd.
+
+.for host in IPS ECO
+
+${${host}_SSH}/inetd.conf: Makefile
+	@echo '\n======== $@ ========'
+	mkdir -p ${@:H}
+	rm -f $@ $@.tmp
+	echo '### regress ipsec $@' >$@.tmp
+	echo stream tcp nowait root internal >>$@.tmp
+	echo stream tcp6 nowait root internal >>$@.tmp
+.for sec in ESP AH IPIP IPCOMP BUNDLE
+.for mode in TRANSP TUNNEL4 TUNNEL6
+.if ! empty(${host}_${sec}_${mode}_IPV4)
+	echo '${${host}_${sec}_${mode}_IPV4}:echo\t\t'\
+	    dgram udp wait root internal >>$@.tmp
+	echo '[${${host}_${sec}_${mode}_IPV6}]:echo\t'\
+	    dgram udp wait root internal >>$@.tmp
+.endif
+.endfor
+.endfor
+	mv $@.tmp $@
+
+.endfor
 
 # Check whether the address, route and remote setup is correct.
 
