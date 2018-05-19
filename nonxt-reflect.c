@@ -34,7 +34,6 @@ usage(void)
 {
 	fprintf(stderr, "usage: nonxt-reflect [localaddr]\n"
 	    "Wait for protocol 59 packet in background and send answer.\n");
-	
 	exit(1);
 }
 
@@ -55,7 +54,7 @@ main(int argc, char *argv[])
 		local = NULL;
 		break;
 	case 2:
-		local = argv[1]; 
+		local = argv[1];
 		break;
 	default:
 		usage();

@@ -54,7 +54,7 @@ main(int argc, char *argv[])
 		remote = argv[1];
 		break;
 	case 3:
-		local = argv[1]; 
+		local = argv[1];
 		remote = argv[2];
 		break;
 	default:
