@@ -496,7 +496,7 @@ CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcpdump
 
 .PHONY: create-setup
 
-create-setup: stamp-hostname
+create-setup: stamp-hostname stamp-inetd
 
 # Create hostname.if files, copy them to the machines and install addresses.
 
