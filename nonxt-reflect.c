@@ -32,8 +32,8 @@ void __dead usage(void);
 void
 usage(void)
 {
-	fprintf(stderr, "usage: nonxt-reflect [localaddr]\n"
-	    "Wait for protocol 59 packet in background and send answer.\n");
+	fprintf(stderr, "usage: nonxt-reflect localaddr]\n"
+	    "Daemonize, wait for protocol 59 packets, and answer them.\n");
 	exit(1);
 }
 
