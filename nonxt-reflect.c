@@ -41,9 +41,7 @@ int
 main(int argc, char *argv[])
 {
 	struct addrinfo hints, *res, *res0;
-	struct sockaddr_storage ss;
 	const char *cause = NULL, *local;
-	socklen_t slen;
 	int error;
 	int save_errno;
 	int s;
@@ -59,6 +57,9 @@ main(int argc, char *argv[])
 	default:
 		usage();
 	}
+
+	if (pledge("stdio inet dns proc", NULL) == -1)
+		err(1, "pledge");
 
 	/* Create socket and bind it to local address. */
 	memset(&hints, 0, sizeof(hints));
@@ -88,17 +89,25 @@ main(int argc, char *argv[])
 		err(1, "%s", cause);
 	freeaddrinfo(res0);
 
-	/* Scoket is ready to receive, test may proceed. */
-	daemon(0, 0);
+	/* Socket is ready to receive, parent process may proceed. */
+	daemon(1, 1);
+	if (pledge("stdio", NULL) == -1)
+		err(1, "pledge");
 
-	/* Receive a protocol 59 packet. */
-	slen = sizeof(ss);
-	if (recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&ss, &slen)
-	    == -1)
-		err(1, "recv");
-	/* Send back a reply packet. */
-	if (sendto(s, buf, 0, 0, (struct sockaddr *)&ss, slen) == -1)
-		err(1, "send");
+	for (;;) {
+		struct sockaddr_storage ss;
+		socklen_t slen;
 
+		/* Receive a protocol 59 packet. */
+		slen = sizeof(ss);
+		if (recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&ss,
+		    &slen) == -1)
+			err(1, "recv");
+		/* Send back a reply packet. */
+		if (sendto(s, buf, 0, 0, (struct sockaddr *)&ss, slen) == -1)
+			err(1, "send");
+	}
+
+	/* NOTREACHED */
 	return 0;
 }
