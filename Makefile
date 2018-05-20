@@ -496,7 +496,7 @@ CLEANFILES +=	addr.py *.pyc *.log stamp-* */hostname.* *.{in,out} *.tcpdump
 
 .PHONY: create-setup
 
-create-setup: stamp-hostname stamp-inetd
+create-setup: stamp-hostname stamp-inetd stamp-nonxt-reflect
 
 # Create hostname.if files, copy them to the machines and install addresses.
 
@@ -787,8 +787,19 @@ ${${host}_SSH}/nonxt_reflect: nonxt_reflect.sh Makefile
 .endfor
 	echo '"' >>$@.tmp
 	cat ${.CURDIR}/nonxt_reflect.sh >>$@.tmp
+	chmod 755 $@.tmp
 	mv $@.tmp $@
 .endfor
+
+stamp-nonxt-reflect: ${IPS_SSH}/nonxt_reflect ${ECO_SSH}/nonxt_reflect
+	@echo '\n======== $@ ========'
+.for host in IPS ECO
+	ssh ${${host}_SSH} make -C ${.CURDIR} nonxt-reflect
+	scp ${${host}_SSH}/nonxt_reflect root@${${host}_SSH}:/etc/rc.d/
+	ssh root@${${host}_SSH}\
+	    "rcctl enable nonxt_reflect && rcctl restart nonxt_reflect"
+.endfor
+	date >$@
 
 # Check whether the address, route and remote setup is correct.
 
@@ -874,7 +885,7 @@ check-setup-ips:
 	    fgrep ' ${${host}_${sec}_${mode}_${ipv}}.7 ' \
 	    # ${host}_${sec}_${mode}_${ipv}
 	ssh ${IPS_SSH} netstat -nav -f ${inet} -p ${ip} |\
-	    grep ' ${${host}_${sec}_${mode}_${ipv}}\.\* .* *58$$' \
+	    grep ' ${${host}_${sec}_${mode}_${ipv}}\.\* .* *59$$' \
 	    # ${host}_${sec}_${mode}_${ipv}
 .endfor
 .endfor
@@ -956,7 +967,7 @@ check-setup-eco:
 	    fgrep ' ${${host}_${sec}_${mode}_${ipv}}.7 ' \
 	    # ${host}_${sec}_${mode}_${ipv}
 	ssh ${ECO_SSH} netstat -nav -f ${inet} -p ${ip} |\
-	    grep ' ${${host}_${sec}_${mode}_${ipv}}\.\* .* *58$$' \
+	    grep ' ${${host}_${sec}_${mode}_${ipv}}\.\* .* *59$$' \
 	    # ${host}_${sec}_${mode}_${ipv}
 .endfor
 .endfor
