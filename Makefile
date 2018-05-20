@@ -763,6 +763,33 @@ stamp-inetd: ${IPS_SSH}/inetd.conf ${ECO_SSH}/inetd.conf
 .endfor
 	date >$@
 
+# Create rc.d/nonxt_reflect startup scripts,
+# copy them to the remote machines,
+# build remote nonxt-reflect binary,
+# and start nonext protocol 59 reflector daemons.
+
+.for host in IPS ECO
+${${host}_SSH}/nonxt_reflect: nonxt_reflect.sh Makefile
+	@echo '\n======== $@ ========'
+	mkdir -p ${@:H}
+	rm -f $@ $@.tmp
+	echo '#!/bin/ksh' >$@.tmp
+	echo '### regress ipsec $@' >>$@.tmp
+	echo 'local_addresses="' >>$@.tmp
+.for sec in ESP AH IPIP IPCOMP BUNDLE
+.for mode in TRANSP TUNNEL4 TUNNEL6
+.for ipv in IPV4 IPV6
+.if ! empty(${host}_${sec}_${mode}_${ipv})
+	echo '${${host}_${sec}_${mode}_${ipv}}' >>$@.tmp
+.endif
+.endfor
+.endfor
+.endfor
+	echo '"' >>$@.tmp
+	cat ${.CURDIR}/nonxt_reflect.sh >>$@.tmp
+	mv $@.tmp $@
+.endfor
+
 # Check whether the address, route and remote setup is correct.
 
 .PHONY: check-setup

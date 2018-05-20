@@ -1,4 +1,5 @@
-local_addresses="10.188.220.17 fdd7:e83e:66bc:220::17"
+
+# $OpenBSD$
 
 if [ -z "$local_addresses" ]; then
 	echo no local addresses configured >&2
