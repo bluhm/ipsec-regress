@@ -811,7 +811,7 @@ check-setup-src:
 
 check-setup-ips:
 	@echo '\n======== $@ ========'
-.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+.for ping inet ip ipv in ping inet ip IPV4 ping6 inet6 ip6 IPV6
 .for host dir in IPS IN IPS OUT IPS BUNDLE
 	ssh ${IPS_SSH} ${ping} -n -c 1 ${${host}_${dir}_${ipv}} \
 	    # ${host}_${dir}_${ipv}
@@ -845,6 +845,9 @@ check-setup-ips:
 .for host mode in IPS TRANSP IPS TUNNEL4 IPS TUNNEL6
 	ssh ${IPS_SSH} netstat -nav -f ${inet} -p udp |\
 	    fgrep ' ${${host}_${sec}_${mode}_${ipv}}.7 ' \
+	    # ${host}_${sec}_${mode}_${ipv}
+	ssh ${IPS_SSH} netstat -nav -f ${inet} -p ${ip} |\
+	    grep ' ${${host}_${sec}_${mode}_${ipv}}\.\* .* *58$$' \
 	    # ${host}_${sec}_${mode}_${ipv}
 .endfor
 .endfor
@@ -896,7 +899,7 @@ check-setup-rt:
 
 check-setup-eco:
 	@echo '\n======== $@ ========'
-.for ping inet ipv in ping inet IPV4 ping6 inet6 IPV6
+.for ping inet ip ipv in ping inet ip IPV4 ping6 inet6 ip6 IPV6
 .for host dir in ECO IN
 	ssh ${ECO_SSH} ${ping} -n -c 1 ${${host}_${dir}_${ipv}} \
 	    # ${host}_${dir}_${ipv}
@@ -924,6 +927,9 @@ check-setup-eco:
 .for host mode in ECO TUNNEL4 ECO TUNNEL6
 	ssh ${ECO_SSH} netstat -nav -f ${inet} -p udp |\
 	    fgrep ' ${${host}_${sec}_${mode}_${ipv}}.7 ' \
+	    # ${host}_${sec}_${mode}_${ipv}
+	ssh ${ECO_SSH} netstat -nav -f ${inet} -p ${ip} |\
+	    grep ' ${${host}_${sec}_${mode}_${ipv}}\.\* .* *58$$' \
 	    # ${host}_${sec}_${mode}_${ipv}
 .endfor
 .endfor
