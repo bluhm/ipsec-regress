@@ -787,7 +787,8 @@ ${${host}_SSH}/nonxt_reflect: nonxt_reflect.sh Makefile
 	mv $@.tmp $@
 .endfor
 
-stamp-nonxt-reflect: ${IPS_SSH}/nonxt_reflect ${ECO_SSH}/nonxt_reflect
+stamp-nonxt-reflect: ${IPS_SSH}/nonxt_reflect ${ECO_SSH}/nonxt_reflect \
+    nonxt-reflect
 	@echo '\n======== $@ ========'
 .for host in IPS ECO
 	ssh ${${host}_SSH} make -C ${.CURDIR} nonxt-reflect
