@@ -783,6 +783,7 @@ ${${host}_SSH}/nonxt_reflect: nonxt_reflect.sh Makefile
 .endfor
 	echo '"' >>$@.tmp
 	cat ${.CURDIR}/nonxt_reflect.sh >>$@.tmp
+	sh -n $@.tmp
 	chmod 755 $@.tmp
 	mv $@.tmp $@
 .endfor
