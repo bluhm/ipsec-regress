@@ -91,7 +91,7 @@ main(int argc, char *argv[])
 
 	/* Socket is ready to receive, parent process may proceed. */
 	daemon(1, 1);
-	if (pledge("stdio", NULL) == -1)
+	if (pledge("stdio inet", NULL) == -1)
 		err(1, "pledge");
 
 	for (;;) {
