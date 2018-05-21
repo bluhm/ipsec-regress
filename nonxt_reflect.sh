@@ -1,5 +1,5 @@
 
-# $OpenBSD$
+# $OpenBSD: nonxt_reflect.sh,v 1.1 2018/05/21 01:19:21 bluhm Exp $
 
 if [ -z "$local_addresses" ]; then
 	echo no local addresses configured >&2

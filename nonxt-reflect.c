@@ -1,4 +1,4 @@
-/*	$OpenBSD: nonxt-reflect.c,v 1.1 2018/05/19 10:50:57 bluhm Exp $	*/
+/*	$OpenBSD: nonxt-reflect.c,v 1.2 2018/05/21 01:19:21 bluhm Exp $	*/
 /*
  * Copyright (c) Alexander Bluhm <bluhm@genua.de>
  *
