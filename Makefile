@@ -364,9 +364,7 @@ run-regress-send-tcp-${host}_${sec}_${mode}_${ipv}:
 # Send no next header protocol 59 packets through the IPsec test.
 # They consist solely of an IPv6 header chain and trigger edge cases.
 
-# Deactivate for now until the raw IP reflector can be build and
-# started reliably on remote machine.  Manually run make nonxt.
-# XXX TARGETS +=	nonxt-${host}_${sec}_${mode}_${ipv}
+TARGETS +=	nonxt-${host}_${sec}_${mode}_${ipv}
 nonxt ${host:L} ${sec:L} ${mode:L} ${ipv:L}:\
     run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}
 run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-sendrecv
@@ -375,8 +373,6 @@ run-regress-send-nonxt-${host}_${sec}_${mode}_${ipv}: nonxt-sendrecv
 	    awk '/input ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.in
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
 	    awk '/output ${sec:S/BUNDLE/ESP/} /{print $$1}' >pkt.out
-	ssh ${${host}_SSH} ${SUDO}\
-	    ./nonxt-reflect ${${host}_${sec}_${mode}_${ipv}}
 	${SUDO} ./nonxt-sendrecv ${${host}_${sec}_${mode}_${ipv}}
 .if "${sec}" == IPCOMP
 	netstat -s -p ${sec:L:S/ipip/ipencap/:S/bundle/esp/} |\
