@@ -32,7 +32,7 @@ void __dead usage(void);
 void
 usage(void)
 {
-	fprintf(stderr, "usage: nonxt-reflect localaddr]\n"
+	fprintf(stderr, "usage: nonxt-reflect localaddr\n"
 	    "Daemonize, wait for protocol 59 packets, and answer them.\n");
 	exit(1);
 }
@@ -48,9 +48,6 @@ main(int argc, char *argv[])
 	char buf[1024];
 
 	switch (argc) {
-	case 1:
-		local = NULL;
-		break;
 	case 2:
 		local = argv[1];
 		break;
