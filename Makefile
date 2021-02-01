@@ -155,10 +155,10 @@ PROGS =		nonxt-sendrecv nonxt-reflect
 
 .if empty (IPS_SSH) || empty (RT_SSH) || empty (ECO_SSH)
 regress:
-	# This tests needs three remote machines to operate on.
-	# IPS_SSH RT_SSH ECO_SSH are empty.
-	# Fill out these variables for additional tests, then
-	# check whether your test machines are set up properly.
+	@echo This tests needs three remote machines to operate on.
+	@echo IPS_SSH RT_SSH ECO_SSH are empty.
+	@echo Fill out these variables for additional tests, then
+	@echo check whether your test machines are set up properly.
 	@echo SKIPPED
 
 .elif make (regress) || make (all)
